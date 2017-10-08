@@ -16,9 +16,9 @@ var ArticleSchema = new Schema({
     required: true,
     validate: [
       function(input) {
-        return (input === "left" || input === "neutral" || input === "right");
+        return (input === "left" || input === "Center" || input === "right");
       },
-      "Need to declare a bias for the article (Left, Neutral or Right)"
+      "Need to declare a bias for the article (Left, Center, or Right)"
     ]
   }, 
   note: {
