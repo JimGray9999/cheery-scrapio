@@ -1,63 +1,93 @@
-// todo: setup server for express app
-// need to scrape websites...can it be done by submitting a webpage?
-// might be easier to provide a list...but start with one for now (all sides, and pick your bias)
+/* SERVER FOR THE APPLICATION */
+/******************************/
 
+// dependencies
 var express = require("express");
 var expresshbs = require("express-handlebars");
-
+var bodyParser = require("body-parser");
 var cheerio = require("cheerio");
 var request = require("request");
+var mongoose = require("mongoose");
+
+// Set mongoose to leverage built in JavaScript ES6 Promises
+mongoose.Promise = Promise; 
+
+// database models
+var User = require("./models/User");
+var Article = require("./models/Article");
 
 var app = express();
-
 var PORT = 3000;
 
 // Set Handlebars as the default templating engine.
 app.engine("handlebars", expresshbs({ defaultLayout: "main" }));
 app.set("view engine", "handlebars");
 
+// Make public a static dir
+app.use(express.static("public"));
 
-// TODO: have the request function fill the leftResults array with links from the left bias
-// TODO: have the request function work the same for center and right bias links
-// request("https://www.democraticunderground.com/?com=forum&id=1014", function(err, response, html) {
 
-//   var $ = cheerio.load(html);
+app.use(bodyParser.urlencoded({
+  extended: false
+}));
 
-//   var leftResults = [];
+// ROUTES //
+// TODO: build routes for the application
+  // Grab all scraped links
+  // Show articles only based on bias
+  // add notes to a specific article
+app.get("/", function(req, res) {
+  res.render("index");
+})
 
-//   var linkStart = "https://www.democraticunderground.com";
+app.get("/left", function(req, res) {
 
-//   // TODO: make code DRY to check for left and right biased news/message board
-//   // TODO list:
-//   // Left scrapes: Democratic Underground, NY Times 
-//   // Right scrapes: Free Republic, Fox News
+});
 
-//   // right sites:
-//   // http://www.freerepublic.com/tag/breaking-news/index?tab=articles
-//   // http://www.foxnews.com/
+app.get("/right", function(req, res) {
 
-//   // left sites:
-//   // https://www.nytimes.com/
-//   // https://www.democraticunderground.com/?com=forum&id=1014
+});
+
+app.get("/center", function(req, res) {
+
+});
+
+// END ROUTES //
+
+// REQUESTS //
+
+// connect to the left-leaning discussion board Democratic Underground
+request("https://www.democraticunderground.com/?com=forum&id=1014", function(err, response, html) {
+
+  var $ = cheerio.load(html);
+
+  var leftResults = [];
+
+  var linkStart = "https://www.democraticunderground.com";
+
+  // right sites:
+  // http://www.freerepublic.com/tag/breaking-news/index?tab=articles
+  // http://www.foxnews.com/
+
+  // left sites:
+  // https://www.nytimes.com/
+  // https://www.democraticunderground.com/?com=forum&id=1014
   
 
-//   $("td.title").each(function(i, element) {
+  $("td.title").each(function(i, element) {
 
-//     var newsTitle = $(element).children().text();
-//     var link = linkStart + $(element).children().attr("href");
-//     var bias = "left";
+    var newsTitle = $(element).children().text();
+    var link = linkStart + $(element).children().attr("href");
+    var bias = "left";
 
-//     leftResults.push({
-//       title: newsTitle,
-//       link: link,
-//       bias: bias
-//     });
-    
-//   });
-
-//   console.log(leftResults);
-// });
-
+    leftResults.push({
+      title: newsTitle,
+      link: link,
+      bias: bias
+    });    
+  });
+});
+// connect to the right-leaning discussion board Free Republic
 request("http://www.freerepublic.com/tag/breaking-news/index?tab=articles", function(err, response, html) {
   
     var $ = cheerio.load(html);
@@ -79,10 +109,13 @@ request("http://www.freerepublic.com/tag/breaking-news/index?tab=articles", func
       });
       
     });
-  
-    console.log(rightResults);
   });
 
+// TODO: add requests for Fox News(Right), NY Times(Left), BBC(Center)
+
+// END REQUESTS //
+
+// Open and listen to port //
 app.listen(PORT, function() {
   console.log("SHHH! We're listening on port: " + PORT);
   console.log("Go to http://localhost:" + PORT);
