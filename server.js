@@ -130,10 +130,6 @@ app.get("/scrape", function(req, res) {
 
 // END ROUTES //
 
-// REQUESTS //
-
-// END REQUESTS //
-
 // Open and listen to port //
 app.listen(PORT, function() {
   console.log("SHHH! We're listening on port: " + PORT);
