@@ -18,7 +18,7 @@ var UserSchema = new Schema({
       function(input) {
         return (input === "left" || input === "center" || input === "right");
       },
-      "Need to declare a bias for the article (Left, Center, or Right)"
+      "Need to declare a bias for the user (Left, Center, or Right)"
     ]
   }
   // TODO: link to list of notes the user posted
