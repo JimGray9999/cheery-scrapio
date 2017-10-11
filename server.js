@@ -63,7 +63,7 @@ app.get("/left", function(req, res) {
 });
 
 app.get("/right", function(req, res) {
-    // grab all left-learning articles
+    // grab all right-learning articles
     // return for the get request
 });
 
@@ -73,7 +73,7 @@ app.get("/center", function(req, res) {
 });
 
 // runs requests to add articles to the db
-app.get("/scrape", function(req, res) {
+app.get("/scrape/left", function(req, res) {
   // connect to the left-leaning discussion board Democratic Underground
   request("https://www.democraticunderground.com/?com=forum&id=1014", function(error, response, html) {
     var $ = cheerio.load(html);
@@ -100,6 +100,10 @@ app.get("/scrape", function(req, res) {
     });
   });
 
+
+});
+
+app.get("/scrape/right", function(req, res) {
   // connect to the right-leaning discussion board Free Republic
   request("http://www.freerepublic.com/tag/breaking-news/index?tab=articles", function(err, response, html) {
     
@@ -125,6 +129,12 @@ app.get("/scrape", function(req, res) {
         };
       });
     });
+  });
+});
+
+app.get("/scrape/news/center", function(req, res) {
+  request("http://www.bbc.com/news/world/us_and_canada", function(error, response, html) {
+
   });
 });
 
