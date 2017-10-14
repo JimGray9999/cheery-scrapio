@@ -63,6 +63,7 @@ app.get("/all", function(req, res) {
   });
 })
 
+// TODO: Filter and show only the selected bias
 app.get("/left", function(req, res) {
     // grab all left-learning articles
     // return for the get request
@@ -78,7 +79,7 @@ app.get("/center", function(req, res) {
     // return for the get request
 });
 
-// runs requests to add articles to the db
+// run requests to add articles to the db
 app.get("/scrape/left", function(req, res) {
   // connect to the left-leaning discussion board Democratic Underground
   request("https://www.democraticunderground.com/?com=forum&id=1014", function(error, response, html) {

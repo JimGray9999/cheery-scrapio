@@ -1,3 +1,5 @@
+// TODO: create users to leave comments
+
 var mongoose = require("mongoose");
 
 var Schema = mongoose.Schema;
