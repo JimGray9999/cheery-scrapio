@@ -52,9 +52,15 @@ db.once("open", function() {
   // Show articles only based on bias
   // add notes to a specific article
 
-app.get("/", function(req, res) {
+app.get("/all", function(req, res) {
   // show all articles
-  res.render("index");
+  Article.find({}, function(error, doc) {
+    if(error) {
+      console.log(error);
+    } else {
+      res.render("index", {article: doc} );
+    }
+  });
 })
 
 app.get("/left", function(req, res) {
@@ -86,7 +92,9 @@ app.get("/scrape/left", function(req, res) {
       
       leftResults.title = $(element).children().text();
       leftResults.link = linkStart + $(element).children().attr("href");
-      leftResults.bias = "left";
+      leftResults.time = $(element).next().next().next().text();
+      leftResults.left = true;
+      leftResults.right = false;
   
       var newArticle = new Article(leftResults);
 
@@ -99,8 +107,7 @@ app.get("/scrape/left", function(req, res) {
       });
     });
   });
-
-
+  res.redirect('/scrape/right');
 });
 
 app.get("/scrape/right", function(req, res) {
@@ -117,7 +124,9 @@ app.get("/scrape/right", function(req, res) {
   
       rightResults.link = linkStart + $(element).find("h3").children().attr("href");
       rightResults.title = $(element).find("h3").children().text();
-      rightResults.bias = "right";
+      rightResults.time = $(element).find(".date").text();
+      rightResults.left = false;
+      rightResults.right = true;
       
       var newArticle = new Article(rightResults);
       
@@ -130,6 +139,7 @@ app.get("/scrape/right", function(req, res) {
       });
     });
   });
+  res.redirect('/all');
 });
 
 app.get("/scrape/news/center", function(req, res) {

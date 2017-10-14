@@ -10,7 +10,6 @@ Future links to incorporate:
 
 http://www.factcheck.org/search/
 https://cse.google.com/cse/publicurl?cx=006929169413038763769:5ozcueroq2u
-
 https://www.allsides.com/
 
 

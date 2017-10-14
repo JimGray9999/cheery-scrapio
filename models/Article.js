@@ -11,15 +11,17 @@ var ArticleSchema = new Schema({
     type: String,
     required: true
   },
-  bias: {
+  time: {
     type: String,
+    required: true
+  },
+  left: {
+    type: Boolean,
     required: true,
-    validate: [
-      function(input) {
-        return (input === "left" || input === "Center" || input === "right");
-      },
-      "Need to declare a bias for the article (Left, Center, or Right)"
-    ]
+  },
+  right: {
+    type: Boolean,
+    required: true,
   }, 
   note: {
     type: Schema.Types.ObjectId,
