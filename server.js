@@ -161,7 +161,11 @@ app.get("/scrape/news/center", function(req, res) {
 
 // Open and listen to port //
 app.listen(PORT, function() {
-  console.log("SHHH! We're listening on port: " + PORT);
-  console.log("Go to http://localhost:" + PORT);
-  console.log("Please make sure to visit and star my repo at https://github.com/JimGray9999/cheery-scrapio");
+  if (PORT === 8080) {
+    console.log("SHHH! We're listening on port: " + PORT);
+    console.log("Go to http://localhost:" + PORT);
+    console.log("Please make sure to visit and star my repo at https://github.com/JimGray9999/cheery-scrapio");
+  } else {
+    console.log("Please make sure to visit and star my repo at https://github.com/JimGray9999/cheery-scrapio");
+  }
 });
