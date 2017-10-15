@@ -34,8 +34,8 @@ app.use(bodyParser.urlencoded({
 }));
 
 // Database configuration with mongoose
-mongoose.connect("mongolab-round-74854");
-// using Heroku app: mongoose.connect("mongolab-round-74854");
+mongoose.connect("mongodb://heroku_k5gw43s4:r9r8bd924m8rj7kpu98qhm9q75@ds121225.mlab.com:21225/heroku_k5gw43s4");
+// using Heroku app: mongoose.connect("mongodb://heroku_k5gw43s4:r9r8bd924m8rj7kpu98qhm9q75@ds121225.mlab.com:21225/heroku_k5gw43s4");
 // using localhost: mongoose.connect("mongodb://localhost/cheery-scrapio");
 var db = mongoose.connection;
 
