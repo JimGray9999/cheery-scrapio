@@ -75,16 +75,13 @@ app.get("/", function(req, res) {
 app.get("/left", function(req, res) {
     // grab all left-learning articles
     // return for the get request
+    res.render("index");
 });
 
 app.get("/right", function(req, res) {
     // grab all right-learning articles
     // return for the get request
-});
-
-app.get("/center", function(req, res) {
-    // grab all center (BBC) articles
-    // return for the get request
+    res.render("index");
 });
 
 // run requests to add articles to the db
@@ -104,6 +101,7 @@ app.get("/scrape/left", function(req, res) {
       leftResults.time = $(element).next().next().next().text();
       leftResults.left = true;
       leftResults.right = false;
+      leftResults.source = "Democratic Underground";
   
       var newArticle = new Article(leftResults);
 
@@ -111,10 +109,11 @@ app.get("/scrape/left", function(req, res) {
         if(err) {
           console.log(err);
         } else {
-          console.log(doc);
+          // console.log(doc); // link for testing purposes, comment out when not in use
         };
       });
     });
+    console.log("Left links scraped!");
   });
   res.redirect('/scrape/right');
 });
@@ -136,6 +135,7 @@ app.get("/scrape/right", function(req, res) {
       rightResults.time = $(element).find(".date").text();
       rightResults.left = false;
       rightResults.right = true;
+      rightResults.source = "Free Republic";
       
       var newArticle = new Article(rightResults);
       
@@ -143,10 +143,11 @@ app.get("/scrape/right", function(req, res) {
         if(err) {
           console.log(err);
         } else {
-          console.log(doc);
+          // console.log(doc); // link for testing purposes, comment out when not in use
         };
       });
     });
+    console.log("Right links scraped!");
   });
   res.redirect('/all');
 });

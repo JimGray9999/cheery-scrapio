@@ -1,58 +1,51 @@
 <nav>
   <div class="nav-wrapper">
-    <a href="#" class="brand-logo center"Left-Right Board Scraper!</a>
+    <a href="#" class="brand-logo center"Left-Right Board Scraper!"</a>
     <ul class="left hide-on-med-and-down">
       <li><a href="/scrape/left">SCRAPE!</a></li>
       <li><a href="/left">Left</a></li>
-      <li class="active"><a href="/right">Center</a></li>
-      <li><a href="collapsible.html">Right</a></li>
+      <li><a href="/right">Right</a></li>
     </ul>
   </div>
 </nav>
 
 <div class="container">
   <div class="row">
-    <div class="col s4">
-      <img src="/img/hill.png" alt="Hillary Clinton" height="150" width="200">
+    <div class="col s4 center-align">
+      <img  src="/img/hill.png" alt="Hillary Clinton" height="150" width="200">
       <!-- dynamically build cards here with Handlebars: left leaning articles -->
       <div class="left-cards">
         {{#each article}}
           {{#if left}}
-            <div class="col s12 m6">
-              <div class="card blue darken-1">
-                <div class="card-content white-text">
-                  <span class="card-title">Democratic Underground</span>
-                  <p>{{title}}</p>
-                  <p>{{time}}</p>
-                </div>
-                <div class="card-action">
-                  <a href="{{link}}" target="_blank">Link to article</a>
-                  <a href="#">Leave a comment!</a>
-                </div>
+            <div class="card blue darken-1">
+              <div class="card-content white-text">
+                <span class="card-title">{{source}}</span>
+                <p>{{title}}</p>
+                <p>{{time}}</p>
+              </div>
+              <div class="card-action">
+                <a href="{{link}}" target="_blank">Link to article</a>
+                <a href="#">Leave a comment!</a>
+              </div>
             </div>
           {{/if}}
         {{/each}}
       </div>
     </div>
-  </div>
-  <div class="row">
-    <div class="col s4">
+    <div class="col s4 center-align">
       <img src="/img/qe2.jpg" alt="BBC" height="150" width="200">
       <!-- TODO: Dynamically build cards here with BBC articles -->
       <div class="cent-cards"></div>
     </div>
-  </div>
-  <div class="row">
-    <div class="col s4">
+    <div class="col s4 center-align">
       <img src="/img/djt_0.jpg" alt="DJ" height="150" width="200">
       <!-- Build cards here with Handlebars: right leaning articles -->
       <div class="right-cards">
         {{#each article}}
           {{#if right}}
-            <div class="col s12 m6">
               <div class="card red darken-1">
                 <div class="card-content white-text">
-                  <span class="card-title">Free Republic</span>
+                  <span class="card-title">{{source}}</span>
                   <p>{{title}}</p>
                   <p>{{time}}</p>
                 </div>
@@ -61,12 +54,10 @@
                   <a href="#">Leave a comment!</a>
                 </div>
               </div>
-            </div>
           {{/if}}
         {{/each}}
       </div>
     </div>
-  </div>
 </div>
 
 

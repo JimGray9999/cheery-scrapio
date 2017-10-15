@@ -23,6 +23,10 @@ var ArticleSchema = new Schema({
     type: Boolean,
     required: true,
   }, 
+  source: {
+    type: String,
+    required: true
+  },
   note: {
     type: Schema.Types.ObjectId,
     ref: "Note",
