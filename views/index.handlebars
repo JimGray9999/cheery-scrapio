@@ -17,7 +17,7 @@
       <div class="left-cards">
         {{#each article}}
           {{#if left}}
-            <div class="card blue darken-1">
+            <div class="card blue darken-1" data-id={{_id}}>
               <div class="card-content white-text">
                 <span class="card-title">{{source}}</span>
                 <p>{{title}}</p>
@@ -52,7 +52,7 @@
       <div class="right-cards">
         {{#each article}}
           {{#if right}}
-              <div class="card red darken-1">
+              <div class="card red darken-1" data-id={{_id}}>
                 <div class="card-content white-text">
                   <span class="card-title">{{source}}</span>
                   <p>{{title}}</p>
@@ -68,7 +68,7 @@
                     <p>{{title}}<p>
                   </div>
                   <div class="modal-footer">
-                    <a href="#!" class="modal-action modal-close waves-effect waves-green btn-flat">Post comment</a>
+                    <a href="/articles/" class="modal-action modal-close waves-effect waves-green btn-flat">Post comment</a>
                   </div>
                 </div>
               </div>
