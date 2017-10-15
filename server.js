@@ -18,7 +18,7 @@ var Article = require("./models/Article");
 
 var app = express();
 // use for Heroku app if launched
-var PORT = process.env.port || 8080;
+var PORT = process.env.port || 5000;
 
 
 // Set Handlebars as the default templating engine.
@@ -162,11 +162,7 @@ app.get("/scrape/news/center", function(req, res) {
 
 // Open and listen to port //
 app.listen(PORT, function() {
-  if (PORT === 8080) {
     console.log("SHHH! We're listening on port: " + PORT);
     console.log("Go to http://localhost:" + PORT);
     console.log("Please make sure to visit and star my repo at https://github.com/JimGray9999/cheery-scrapio");
-  } else {
-    console.log("Please make sure to visit and star my repo at https://github.com/JimGray9999/cheery-scrapio");
-  }
 });
