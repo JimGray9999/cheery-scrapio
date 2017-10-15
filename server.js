@@ -17,7 +17,8 @@ var User = require("./models/User");
 var Article = require("./models/Article");
 
 var app = express();
-var PORT = 3000;
+// use for localhost testing or Heroku app if launched
+var PORT = process.env.port || 3000;
 
 // Set Handlebars as the default templating engine.
 app.engine("handlebars", expresshbs({ defaultLayout: "main" }));
