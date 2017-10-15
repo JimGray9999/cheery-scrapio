@@ -17,8 +17,9 @@ var User = require("./models/User");
 var Article = require("./models/Article");
 
 var app = express();
-// use for localhost testing or Heroku app if launched
-var PORT = process.env.port || 3000;
+// use for Heroku app if launched
+var PORT = process.env.port || 8080;
+
 
 // Set Handlebars as the default templating engine.
 app.engine("handlebars", expresshbs({ defaultLayout: "main" }));
@@ -33,9 +34,8 @@ app.use(bodyParser.urlencoded({
 }));
 
 // Database configuration with mongoose
-mongoose.connect("mongodb://heroku_9826r4s6:pickles2233@ds111535.mlab.com:11535/heroku_9826r4s6");
-
-// using Heroku app: mongoose.connect("mongodb://<dbuser>:<dbpassword>@ds111535.mlab.com:11535/heroku_9826r4s6");
+mongoose.connect("mongolab-round-74854");
+// using Heroku app: mongoose.connect("mongolab-round-74854");
 // using localhost: mongoose.connect("mongodb://localhost/cheery-scrapio");
 var db = mongoose.connection;
 
