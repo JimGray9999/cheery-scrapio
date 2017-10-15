@@ -33,6 +33,7 @@ app.use(bodyParser.urlencoded({
 
 // Database configuration with mongoose
 mongoose.connect("mongodb://<dbuser>:<dbpassword>@ds111535.mlab.com:11535/heroku_9826r4s6");
+
 // using Heroku app: mongoose.connect("mongodb://<dbuser>:<dbpassword>@ds111535.mlab.com:11535/heroku_9826r4s6");
 // using localhost: mongoose.connect("mongodb://localhost/cheery-scrapio");
 var db = mongoose.connection;
@@ -64,6 +65,10 @@ app.get("/all", function(req, res) {
     }
   });
 })
+
+app.get("/", function(req, res) {
+  res.render("index");
+});
 
 // TODO: Filter and show only the selected bias
 app.get("/left", function(req, res) {
