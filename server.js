@@ -13,7 +13,7 @@ var mongoose = require("mongoose");
 mongoose.Promise = Promise; 
 
 // database models
-var User = require("./models/User");
+var Note = require("./models//Note");
 var Article = require("./models/Article");
 
 var app = express();
