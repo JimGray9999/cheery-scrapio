@@ -4,7 +4,8 @@ $(document).ready(function() {
 
 
   $(document).on("click", "#modal1", function() {
-
+    var thisId = $(this).attr("data-id");
+    console.log(thisId);
 
   });
 });
