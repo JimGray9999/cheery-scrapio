@@ -33,7 +33,7 @@ app.use(bodyParser.urlencoded({
 }));
 
 // Database configuration with mongoose
-mongoose.connect("mongodb://<dbuser>:<dbpassword>@ds111535.mlab.com:11535/heroku_9826r4s6");
+mongoose.connect("mongodb://heroku_9826r4s6:pickles2233@ds111535.mlab.com:11535/heroku_9826r4s6");
 
 // using Heroku app: mongoose.connect("mongodb://<dbuser>:<dbpassword>@ds111535.mlab.com:11535/heroku_9826r4s6");
 // using localhost: mongoose.connect("mongodb://localhost/cheery-scrapio");
