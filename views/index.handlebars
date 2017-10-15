@@ -30,7 +30,7 @@
               <!-- Modal Structure -->
               <div id="modal1" class="modal">
                 <div class="modal-content">
-                  <p>{{title}}</p>
+                  <p>{{this.title}}</p>
                 </div>
                 <div class="modal-footer">
                   <a href="/articles/" class="modal-action modal-close waves-effect waves-green btn-flat">Post comment</a>
@@ -44,7 +44,7 @@
     <div class="col s4 center-align">
       <img src="/img/qe2.jpg" alt="BBC" height="150" width="200">
       <!-- TODO: Dynamically build cards here with BBC articles -->
-      <div class="cent-cards"></div>
+      <div class="bbc-cards"></div>
     </div>
     <div class="col s4 center-align">
       <img src="/img/djt_0.jpg" alt="DJ" height="150" width="200">
@@ -68,7 +68,7 @@
                     <p>{{title}}<p>
                   </div>
                   <div class="modal-footer">
-                    <a href="/articles/" class="modal-action modal-close waves-effect waves-green btn-flat">Post comment</a>
+                    <a id="save-note" href="/articles/" class="modal-action modal-close waves-effect waves-green btn-flat">Post comment</a>
                   </div>
                 </div>
               </div>
