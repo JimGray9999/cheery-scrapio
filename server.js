@@ -6,7 +6,7 @@ require('dotenv').config();
 
 // dependencies
 var express = require("express");
-var expresshbs = require("express-handlebars");
+var { engine } = require("express-handlebars");
 var cheerio = require("cheerio");
 var axios = require("axios");
 var mongoose = require("mongoose");
@@ -21,11 +21,28 @@ var Article = require("./models/Article");
 
 var app = express();
 // Port configuration from environment
-var PORT = process.env.PORT || 5000;
+var PORT = process.env.PORT || 3000;
+
+// Axios HTTP client with sensible defaults to avoid hangs/blocks during scraping
+var httpClient = axios.create({
+  timeout: 10000,
+  headers: {
+    "User-Agent": "Mozilla/5.0 (compatible; cheery-scrapio/1.0; +https://github.com/JimGray9999/cheery-scrapio)"
+  },
+  maxRedirects: 5
+});
+
+// Global error handlers to avoid process exit on unexpected errors
+process.on("unhandledRejection", function(reason) {
+  console.error("Unhandled Rejection:", reason);
+});
+process.on("uncaughtException", function(err) {
+  console.error("Uncaught Exception:", err);
+});
 
 
 // Set Handlebars as the default templating engine.
-app.engine("handlebars", expresshbs({ defaultLayout: "main" }));
+app.engine("handlebars", engine({ defaultLayout: "main" }));
 app.set("view engine", "handlebars");
 
 // Security middleware
@@ -92,7 +109,7 @@ app.get("/right", function(req, res) {
 app.get("/scrape/left", async function(req, res) {
   try {
     // connect to the left-leaning discussion board Democratic Underground
-    const response = await axios.get(process.env.SCRAPE_URL_LEFT || "https://www.democraticunderground.com/?com=forum&id=1014");
+    const response = await httpClient.get(process.env.SCRAPE_URL_LEFT || "https://www.democraticunderground.com/?com=forum&id=1014");
     const $ = cheerio.load(response.data);
 
     var leftResults = {};
@@ -129,7 +146,7 @@ app.get("/scrape/left", async function(req, res) {
 app.get("/scrape/right", async function(req, res) {
   try {
     // connect to the right-leaning discussion board Free Republic
-    const response = await axios.get(process.env.SCRAPE_URL_RIGHT || "http://www.freerepublic.com/tag/breaking-news/index?tab=articles");
+    const response = await httpClient.get(process.env.SCRAPE_URL_RIGHT || "http://www.freerepublic.com/tag/breaking-news/index?tab=articles");
     const $ = cheerio.load(response.data);
 
     var rightResults = {};
@@ -166,7 +183,7 @@ app.get("/scrape/right", async function(req, res) {
 app.get("/scrape/news/center", async function(req, res) {
   try {
     // TODO: Implement BBC scraping
-    const response = await axios.get(process.env.SCRAPE_URL_CENTER || "http://www.bbc.com/news/world/us_and_canada");
+    const response = await httpClient.get(process.env.SCRAPE_URL_CENTER || "http://www.bbc.com/news/world/us_and_canada");
     // Add scraping logic here
     res.send("BBC scraping not yet implemented");
   } catch (error) {
