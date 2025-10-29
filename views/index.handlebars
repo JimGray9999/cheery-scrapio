@@ -1,6 +1,6 @@
 <nav>
   <div class="nav-wrapper">
-    <a href="#" class="brand-logo center"Left-Right Board Scraper!"</a>
+    <a href="#" class="brand-logo center">Left-Right Board Scraper!</a>
     <ul class="left hide-on-med-and-down">
       <li><a href="/scrape/left">SCRAPE!</a></li>
       <li><a href="/left">Left</a></li>
@@ -17,7 +17,7 @@
       <div class="left-cards">
         {{#each article}}
           {{#if left}}
-            <div class="card blue darken-1" data-id={{_id}}>
+            <div class="card blue darken-1" data-id="{{_id}}">
               <div class="card-content white-text">
                 <span class="card-title">{{source}}</span>
                 <p>{{title}}</p>
@@ -25,15 +25,25 @@
               </div>
               <div class="card-action">
                 <a href="{{link}}" target="_blank">Link to article</a>
-                <a class="modal-trigger" href="#modal1">Leave a comment!</a>
+                <a class="modal-trigger" href="#modal-{{_id}}">Leave a comment!</a>
               </div>
               <!-- Modal Structure -->
-              <div id="modal1" class="modal">
+              <div id="modal-{{_id}}" class="modal">
                 <div class="modal-content">
-                  <p>{{this.title}}</p>
+                  <h4>{{source}}</h4>
+                  <p><strong>{{title}}</strong></p>
+                  <div class="input-field">
+                    <input id="note-header-{{_id}}" type="text" placeholder="Comment Title">
+                    <label for="note-header-{{_id}}">Title</label>
+                  </div>
+                  <div class="input-field">
+                    <textarea id="note-text-{{_id}}" class="materialize-textarea" placeholder="Your comment"></textarea>
+                    <label for="note-text-{{_id}}">Comment</label>
+                  </div>
                 </div>
                 <div class="modal-footer">
-                  <a href="/articles/" class="modal-action modal-close waves-effect waves-green btn-flat">Post comment</a>
+                  <a href="#!" class="modal-action modal-close waves-effect waves-red btn-flat">Cancel</a>
+                  <a href="#!" class="save-note modal-action modal-close waves-effect waves-green btn-flat" data-id="{{_id}}">Post Comment</a>
                 </div>
               </div>
             </div>
@@ -52,7 +62,7 @@
       <div class="right-cards">
         {{#each article}}
           {{#if right}}
-              <div class="card red darken-1" data-id={{_id}}>
+              <div class="card red darken-1" data-id="{{_id}}">
                 <div class="card-content white-text">
                   <span class="card-title">{{source}}</span>
                   <p>{{title}}</p>
@@ -60,15 +70,25 @@
                 </div>
                 <div class="card-action">
                   <a href="{{link}}" target="_blank">Link to article</a>
-                  <a class="modal-trigger" href="#modal1">Leave a comment!</a>
+                  <a class="modal-trigger" href="#modal-{{_id}}">Leave a comment!</a>
                 </div>
                 <!-- Modal Structure -->
-                <div id="modal1" class="modal">
+                <div id="modal-{{_id}}" class="modal">
                   <div class="modal-content">
-                    <p>{{title}}<p>
+                    <h4>{{source}}</h4>
+                    <p><strong>{{title}}</strong></p>
+                    <div class="input-field">
+                      <input id="note-header-{{_id}}" type="text" placeholder="Comment Title">
+                      <label for="note-header-{{_id}}">Title</label>
+                    </div>
+                    <div class="input-field">
+                      <textarea id="note-text-{{_id}}" class="materialize-textarea" placeholder="Your comment"></textarea>
+                      <label for="note-text-{{_id}}">Comment</label>
+                    </div>
                   </div>
                   <div class="modal-footer">
-                    <a id="save-note" href="/articles/" class="modal-action modal-close waves-effect waves-green btn-flat">Post comment</a>
+                    <a href="#!" class="modal-action modal-close waves-effect waves-red btn-flat">Cancel</a>
+                    <a href="#!" class="save-note modal-action modal-close waves-effect waves-green btn-flat" data-id="{{_id}}">Post Comment</a>
                   </div>
                 </div>
               </div>

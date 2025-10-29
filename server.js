@@ -75,17 +75,26 @@ app.get("/", function(req, res) {
   res.render("index");
 });
 
-// TODO: Filter and show only the selected bias
-app.get("/left", function(req, res) {
-    // grab all left-learning articles
-    // return for the get request
-    res.render("index");
+// Filter and show only left-leaning articles
+app.get("/left", async function(req, res) {
+  try {
+    const articles = await Article.find({ left: true }).sort({ _id: -1 });
+    res.render("index", { article: articles });
+  } catch (error) {
+    console.error("Error fetching left articles:", error.message);
+    res.status(500).send("Error loading articles");
+  }
 });
 
-app.get("/right", function(req, res) {
-    // grab all right-learning articles
-    // return for the get request
-    res.render("index");
+// Filter and show only right-leaning articles
+app.get("/right", async function(req, res) {
+  try {
+    const articles = await Article.find({ right: true }).sort({ _id: -1 });
+    res.render("index", { article: articles });
+  } catch (error) {
+    console.error("Error fetching right articles:", error.message);
+    res.status(500).send("Error loading articles");
+  }
 });
 
 // run requests to add articles to the db
@@ -95,30 +104,42 @@ app.get("/scrape/left", async function(req, res) {
     const response = await axios.get(process.env.SCRAPE_URL_LEFT || "https://www.democraticunderground.com/?com=forum&id=1014");
     const $ = cheerio.load(response.data);
 
-    var leftResults = {};
+    const linkStart = "https://www.democraticunderground.com";
+    const articles = [];
+    let newCount = 0;
+    let duplicateCount = 0;
 
-    var linkStart = "https://www.democraticunderground.com";
-
+    // Collect all article data
     $("td.title").each(function(i, element) {
+      const title = $(element).children().text();
+      const link = linkStart + $(element).children().attr("href");
+      const time = $(element).next().next().next().text();
 
-      leftResults.title = $(element).children().text();
-      leftResults.link = linkStart + $(element).children().attr("href");
-      leftResults.time = $(element).next().next().next().text();
-      leftResults.left = true;
-      leftResults.right = false;
-      leftResults.source = "Democratic Underground";
-
-      var newArticle = new Article(leftResults);
-
-      newArticle.save(function(err, doc) {
-        if(err) {
-          console.log(err);
-        } else {
-          // console.log(doc); // link for testing purposes, comment out when not in use
-        };
-      });
+      if (title && link) {
+        articles.push({
+          title: title,
+          link: link,
+          time: time,
+          left: true,
+          right: false,
+          source: "Democratic Underground"
+        });
+      }
     });
-    console.log("Left links scraped!");
+
+    // Save articles with duplicate detection
+    for (const articleData of articles) {
+      const existing = await Article.findOne({ link: articleData.link });
+      if (!existing) {
+        const newArticle = new Article(articleData);
+        await newArticle.save();
+        newCount++;
+      } else {
+        duplicateCount++;
+      }
+    }
+
+    console.log(`Left links scraped! New: ${newCount}, Duplicates skipped: ${duplicateCount}`);
     res.redirect('/scrape/right');
   } catch (error) {
     console.error("Error scraping left links:", error.message);
@@ -132,30 +153,42 @@ app.get("/scrape/right", async function(req, res) {
     const response = await axios.get(process.env.SCRAPE_URL_RIGHT || "http://www.freerepublic.com/tag/breaking-news/index?tab=articles");
     const $ = cheerio.load(response.data);
 
-    var rightResults = {};
+    const linkStart = "http://www.freerepublic.com/";
+    const articles = [];
+    let newCount = 0;
+    let duplicateCount = 0;
 
-    var linkStart = "http://www.freerepublic.com/";
-
+    // Collect all article data
     $("li.article").each(function(i, element) {
+      const link = linkStart + $(element).find("h3").children().attr("href");
+      const title = $(element).find("h3").children().text();
+      const time = $(element).find(".date").text();
 
-      rightResults.link = linkStart + $(element).find("h3").children().attr("href");
-      rightResults.title = $(element).find("h3").children().text();
-      rightResults.time = $(element).find(".date").text();
-      rightResults.left = false;
-      rightResults.right = true;
-      rightResults.source = "Free Republic";
-
-      var newArticle = new Article(rightResults);
-
-      newArticle.save(function(err, doc) {
-        if(err) {
-          console.log(err);
-        } else {
-          // console.log(doc); // link for testing purposes, comment out when not in use
-        };
-      });
+      if (title && link) {
+        articles.push({
+          link: link,
+          title: title,
+          time: time,
+          left: false,
+          right: true,
+          source: "Free Republic"
+        });
+      }
     });
-    console.log("Right links scraped!");
+
+    // Save articles with duplicate detection
+    for (const articleData of articles) {
+      const existing = await Article.findOne({ link: articleData.link });
+      if (!existing) {
+        const newArticle = new Article(articleData);
+        await newArticle.save();
+        newCount++;
+      } else {
+        duplicateCount++;
+      }
+    }
+
+    console.log(`Right links scraped! New: ${newCount}, Duplicates skipped: ${duplicateCount}`);
     res.redirect('/all');
   } catch (error) {
     console.error("Error scraping right links:", error.message);
@@ -172,6 +205,83 @@ app.get("/scrape/news/center", async function(req, res) {
   } catch (error) {
     console.error("Error scraping BBC:", error.message);
     res.status(500).send("Error scraping BBC");
+  }
+});
+
+// NOTE/COMMENT ROUTES //
+
+// Get an article and its note by article ID
+app.get("/articles/:id", async function(req, res) {
+  try {
+    const article = await Article.findById(req.params.id).populate("note");
+    if (!article) {
+      return res.status(404).json({ error: "Article not found" });
+    }
+    res.json(article);
+  } catch (error) {
+    console.error("Error fetching article:", error.message);
+    res.status(500).json({ error: "Error fetching article" });
+  }
+});
+
+// Create or update a note for an article
+app.post("/articles/:id", async function(req, res) {
+  try {
+    const { header, text } = req.body;
+
+    // Validate input
+    if (!header || !text) {
+      return res.status(400).json({ error: "Header and text are required" });
+    }
+
+    // Create the note
+    const newNote = new Note({
+      header: header,
+      text: text
+    });
+
+    const savedNote = await newNote.save();
+
+    // Update the article with the note reference
+    const article = await Article.findByIdAndUpdate(
+      req.params.id,
+      { note: savedNote._id },
+      { new: true }
+    ).populate("note");
+
+    if (!article) {
+      return res.status(404).json({ error: "Article not found" });
+    }
+
+    res.json({ success: true, article: article });
+  } catch (error) {
+    console.error("Error saving note:", error.message);
+    res.status(500).json({ error: "Error saving note" });
+  }
+});
+
+// Delete a note from an article
+app.delete("/articles/:id/note", async function(req, res) {
+  try {
+    const article = await Article.findById(req.params.id);
+
+    if (!article) {
+      return res.status(404).json({ error: "Article not found" });
+    }
+
+    if (article.note) {
+      // Delete the note
+      await Note.findByIdAndDelete(article.note);
+
+      // Remove the note reference from the article
+      article.note = null;
+      await article.save();
+    }
+
+    res.json({ success: true, message: "Note deleted" });
+  } catch (error) {
+    console.error("Error deleting note:", error.message);
+    res.status(500).json({ error: "Error deleting note" });
   }
 });
 
