@@ -77,15 +77,14 @@ db.once("open", function() {
   // Show articles only based on bias
   // add notes to a specific article
 
-app.get("/all", function(req, res) {
-  // show all articles
-  Article.find({}, function(error, doc) {
-    if(error) {
-      console.log(error);
-    } else {
-      res.render("index", {article: doc} );
-    }
-  });
+app.get("/all", async function(req, res) {
+  try {
+    var articles = await Article.find({}).lean();
+    res.render("index", { article: articles });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send("Error loading articles");
+  }
 })
 
 app.get("/", function(req, res) {
@@ -93,16 +92,24 @@ app.get("/", function(req, res) {
 });
 
 // TODO: Filter and show only the selected bias
-app.get("/left", function(req, res) {
-    // grab all left-learning articles
-    // return for the get request
-    res.render("index");
+app.get("/left", async function(req, res) {
+  try {
+    var leftArticles = await Article.find({ left: true }).lean();
+    res.render("index", { article: leftArticles });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send("Error loading left articles");
+  }
 });
 
-app.get("/right", function(req, res) {
-    // grab all right-learning articles
-    // return for the get request
-    res.render("index");
+app.get("/right", async function(req, res) {
+  try {
+    var rightArticles = await Article.find({ right: true }).lean();
+    res.render("index", { article: rightArticles });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send("Error loading right articles");
+  }
 });
 
 // run requests to add articles to the db
@@ -112,29 +119,62 @@ app.get("/scrape/left", async function(req, res) {
     const response = await httpClient.get(process.env.SCRAPE_URL_LEFT || "https://www.democraticunderground.com/?com=forum&id=1014");
     const $ = cheerio.load(response.data);
 
-    var leftResults = {};
-
     var linkStart = "https://www.democraticunderground.com";
 
-    $("td.title").each(function(i, element) {
+    // Collect docs to save (avoid async in cheerio.each directly)
+    var docsToUpsert = [];
 
-      leftResults.title = $(element).children().text();
-      leftResults.link = linkStart + $(element).children().attr("href");
-      leftResults.time = $(element).next().next().next().text();
-      leftResults.left = true;
-      leftResults.right = false;
-      leftResults.source = "Democratic Underground";
+    // Prefer explicit post links for DU forum 1014
+    var primaryAnchors = $("a[href*='?com=view_post'][href*='forum=1014']");
+    var fallbackAnchors = $("td.subject a, td.title a");
+    if(primaryAnchors.length === 0) {
+      var broadAnchors = $("a").filter(function(i, el){
+        var href = $(el).attr("href") || "";
+        return href.includes("?com=view_post") || href.includes("?com=discuss") || href.includes("?com=thread");
+      });
+      fallbackAnchors = fallbackAnchors.add(broadAnchors);
+    }
 
-      var newArticle = new Article(leftResults);
+    console.log("DU selector debug:", {
+      primaryCount: primaryAnchors.length,
+      fallbackCount: fallbackAnchors.length,
+      samplePrimary: primaryAnchors.slice(0,5).map(function(i, el){ return $(el).attr("href"); }).get(),
+      sampleFallback: fallbackAnchors.slice(0,5).map(function(i, el){ return $(el).attr("href"); }).get()
+    });
 
-      newArticle.save(function(err, doc) {
-        if(err) {
-          console.log(err);
-        } else {
-          // console.log(doc); // link for testing purposes, comment out when not in use
-        };
+    var anchorsToUse = primaryAnchors.length > 0 ? primaryAnchors : fallbackAnchors;
+
+    anchorsToUse.each(function(i, element) {
+      var href = $(element).attr("href");
+      var title = $(element).text().trim();
+      if(!href || !title) { return; }
+      if(title.toLowerCase().includes("view all")) { return; }
+      var link = href.startsWith("http") ? href : linkStart + href;
+      var row = $(element).closest("tr");
+      var timeText = row.find("td.time").text().trim() || row.find("td:nth-child(4)").text().trim() || "";
+
+      docsToUpsert.push({
+        updateOne: {
+          filter: { link: link },
+          update: {
+            $set: {
+              title: title,
+              link: link,
+              time: timeText,
+              left: true,
+              right: false,
+              source: "Democratic Underground"
+            }
+          },
+          upsert: true
+        }
       });
     });
+
+    if(docsToUpsert.length > 0) {
+      await Article.bulkWrite(docsToUpsert, { ordered: false });
+    }
+    console.log("Left items attempted to upsert:", docsToUpsert.length);
     console.log("Left links scraped!");
     res.redirect('/scrape/right');
   } catch (error) {
@@ -149,29 +189,23 @@ app.get("/scrape/right", async function(req, res) {
     const response = await httpClient.get(process.env.SCRAPE_URL_RIGHT || "http://www.freerepublic.com/tag/breaking-news/index?tab=articles");
     const $ = cheerio.load(response.data);
 
-    var rightResults = {};
-
     var linkStart = "http://www.freerepublic.com/";
+    var savedRight = 0;
 
     $("li.article").each(function(i, element) {
-
-      rightResults.link = linkStart + $(element).find("h3").children().attr("href");
-      rightResults.title = $(element).find("h3").children().text();
-      rightResults.time = $(element).find(".date").text();
-      rightResults.left = false;
-      rightResults.right = true;
-      rightResults.source = "Free Republic";
+      var rightResults = {
+        link: linkStart + $(element).find("h3").children().attr("href"),
+        title: $(element).find("h3").children().text(),
+        time: $(element).find(".date").text(),
+        left: false,
+        right: true,
+        source: "Free Republic"
+      };
 
       var newArticle = new Article(rightResults);
-
-      newArticle.save(function(err, doc) {
-        if(err) {
-          console.log(err);
-        } else {
-          // console.log(doc); // link for testing purposes, comment out when not in use
-        };
-      });
+      newArticle.save().then(function(){ savedRight++; }).catch(function(err) { console.log(err); });
     });
+    console.log("Right items attempted to save:", savedRight);
     console.log("Right links scraped!");
     res.redirect('/all');
   } catch (error) {
@@ -193,6 +227,18 @@ app.get("/scrape/news/center", async function(req, res) {
 });
 
 // END ROUTES //
+
+// Debug counts route
+app.get("/debug/counts", async function(req, res) {
+  try {
+    var leftCount = await Article.countDocuments({ left: true });
+    var rightCount = await Article.countDocuments({ right: true });
+    var total = await Article.countDocuments({});
+    res.json({ total: total, left: leftCount, right: rightCount });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Open and listen to port //
 app.listen(PORT, function() {
