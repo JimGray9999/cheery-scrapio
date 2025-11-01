@@ -6,7 +6,7 @@ require('dotenv').config();
 
 // dependencies
 var express = require("express");
-var expresshbs = require("express-handlebars");
+var { engine } = require("express-handlebars");
 var cheerio = require("cheerio");
 var axios = require("axios");
 var mongoose = require("mongoose");
@@ -21,11 +21,28 @@ var Article = require("./models/Article");
 
 var app = express();
 // Port configuration from environment
-var PORT = process.env.PORT || 5000;
+var PORT = process.env.PORT || 3000;
+
+// Axios HTTP client with sensible defaults to avoid hangs/blocks during scraping
+var httpClient = axios.create({
+  timeout: 10000,
+  headers: {
+    "User-Agent": "Mozilla/5.0 (compatible; cheery-scrapio/1.0; +https://github.com/JimGray9999/cheery-scrapio)"
+  },
+  maxRedirects: 5
+});
+
+// Global error handlers to avoid process exit on unexpected errors
+process.on("unhandledRejection", function(reason) {
+  console.error("Unhandled Rejection:", reason);
+});
+process.on("uncaughtException", function(err) {
+  console.error("Uncaught Exception:", err);
+});
 
 
 // Set Handlebars as the default templating engine.
-app.engine("handlebars", expresshbs({ defaultLayout: "main" }));
+app.engine("handlebars", engine({ defaultLayout: "main" }));
 app.set("view engine", "handlebars");
 
 // Security middleware
@@ -60,40 +77,38 @@ db.once("open", function() {
   // Show articles only based on bias
   // add notes to a specific article
 
-app.get("/all", function(req, res) {
-  // show all articles
-  Article.find({}, function(error, doc) {
-    if(error) {
-      console.log(error);
-    } else {
-      res.render("index", {article: doc} );
-    }
-  });
+app.get("/all", async function(req, res) {
+  try {
+    var articles = await Article.find({}).lean();
+    res.render("index", { article: articles });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send("Error loading articles");
+  }
 })
 
 app.get("/", function(req, res) {
   res.render("index");
 });
 
-// Filter and show only left-leaning articles
+// TODO: Filter and show only the selected bias
 app.get("/left", async function(req, res) {
   try {
-    const articles = await Article.find({ left: true }).sort({ _id: -1 });
-    res.render("index", { article: articles });
+    var leftArticles = await Article.find({ left: true }).lean();
+    res.render("index", { article: leftArticles });
   } catch (error) {
-    console.error("Error fetching left articles:", error.message);
-    res.status(500).send("Error loading articles");
+    console.log(error);
+    res.status(500).send("Error loading left articles");
   }
 });
 
-// Filter and show only right-leaning articles
 app.get("/right", async function(req, res) {
   try {
-    const articles = await Article.find({ right: true }).sort({ _id: -1 });
-    res.render("index", { article: articles });
+    var rightArticles = await Article.find({ right: true }).lean();
+    res.render("index", { article: rightArticles });
   } catch (error) {
-    console.error("Error fetching right articles:", error.message);
-    res.status(500).send("Error loading articles");
+    console.log(error);
+    res.status(500).send("Error loading right articles");
   }
 });
 
@@ -101,45 +116,66 @@ app.get("/right", async function(req, res) {
 app.get("/scrape/left", async function(req, res) {
   try {
     // connect to the left-leaning discussion board Democratic Underground
-    const response = await axios.get(process.env.SCRAPE_URL_LEFT || "https://www.democraticunderground.com/?com=forum&id=1014");
+    const response = await httpClient.get(process.env.SCRAPE_URL_LEFT || "https://www.democraticunderground.com/?com=forum&id=1014");
     const $ = cheerio.load(response.data);
 
-    const linkStart = "https://www.democraticunderground.com";
-    const articles = [];
-    let newCount = 0;
-    let duplicateCount = 0;
+    var linkStart = "https://www.democraticunderground.com";
 
-    // Collect all article data
-    $("td.title").each(function(i, element) {
-      const title = $(element).children().text();
-      const link = linkStart + $(element).children().attr("href");
-      const time = $(element).next().next().next().text();
+    // Collect docs to save (avoid async in cheerio.each directly)
+    var docsToUpsert = [];
 
-      if (title && link) {
-        articles.push({
-          title: title,
-          link: link,
-          time: time,
-          left: true,
-          right: false,
-          source: "Democratic Underground"
-        });
-      }
-    });
-
-    // Save articles with duplicate detection
-    for (const articleData of articles) {
-      const existing = await Article.findOne({ link: articleData.link });
-      if (!existing) {
-        const newArticle = new Article(articleData);
-        await newArticle.save();
-        newCount++;
-      } else {
-        duplicateCount++;
-      }
+    // Prefer explicit post links for DU forum 1014
+    var primaryAnchors = $("a[href*='?com=view_post'][href*='forum=1014']");
+    var fallbackAnchors = $("td.subject a, td.title a");
+    if(primaryAnchors.length === 0) {
+      var broadAnchors = $("a").filter(function(i, el){
+        var href = $(el).attr("href") || "";
+        return href.includes("?com=view_post") || href.includes("?com=discuss") || href.includes("?com=thread");
+      });
+      fallbackAnchors = fallbackAnchors.add(broadAnchors);
     }
 
-    console.log(`Left links scraped! New: ${newCount}, Duplicates skipped: ${duplicateCount}`);
+    console.log("DU selector debug:", {
+      primaryCount: primaryAnchors.length,
+      fallbackCount: fallbackAnchors.length,
+      samplePrimary: primaryAnchors.slice(0,5).map(function(i, el){ return $(el).attr("href"); }).get(),
+      sampleFallback: fallbackAnchors.slice(0,5).map(function(i, el){ return $(el).attr("href"); }).get()
+    });
+
+    var anchorsToUse = primaryAnchors.length > 0 ? primaryAnchors : fallbackAnchors;
+
+    anchorsToUse.each(function(i, element) {
+      var href = $(element).attr("href");
+      var title = $(element).text().trim();
+      if(!href || !title) { return; }
+      if(title.toLowerCase().includes("view all")) { return; }
+      var link = href.startsWith("http") ? href : linkStart + href;
+      var row = $(element).closest("tr");
+      var timeText = row.find("td.time").text().trim() || row.find("td:nth-child(4)").text().trim() || "";
+
+      docsToUpsert.push({
+        updateOne: {
+          filter: { link: link },
+          update: {
+            $set: {
+              title: title,
+              link: link,
+              time: timeText,
+              left: true,
+              right: false,
+              source: "Democratic Underground"
+            }
+          },
+          upsert: true
+        }
+      });
+    });
+
+    if(docsToUpsert.length > 0) {
+      await Article.bulkWrite(docsToUpsert, { ordered: false });
+    }
+    console.log("Left items attempted to upsert:", docsToUpsert.length);
+    console.log("Left links scraped!");
     res.redirect('/scrape/right');
   } catch (error) {
     console.error("Error scraping left links:", error.message);
@@ -150,45 +186,28 @@ app.get("/scrape/left", async function(req, res) {
 app.get("/scrape/right", async function(req, res) {
   try {
     // connect to the right-leaning discussion board Free Republic
-    const response = await axios.get(process.env.SCRAPE_URL_RIGHT || "http://www.freerepublic.com/tag/breaking-news/index?tab=articles");
+    const response = await httpClient.get(process.env.SCRAPE_URL_RIGHT || "http://www.freerepublic.com/tag/breaking-news/index?tab=articles");
     const $ = cheerio.load(response.data);
 
-    const linkStart = "http://www.freerepublic.com/";
-    const articles = [];
-    let newCount = 0;
-    let duplicateCount = 0;
+    var linkStart = "http://www.freerepublic.com/";
+    var savedRight = 0;
 
     // Collect all article data
     $("li.article").each(function(i, element) {
-      const link = linkStart + $(element).find("h3").children().attr("href");
-      const title = $(element).find("h3").children().text();
-      const time = $(element).find(".date").text();
+      var rightResults = {
+        link: linkStart + $(element).find("h3").children().attr("href"),
+        title: $(element).find("h3").children().text(),
+        time: $(element).find(".date").text(),
+        left: false,
+        right: true,
+        source: "Free Republic"
+      };
 
-      if (title && link) {
-        articles.push({
-          link: link,
-          title: title,
-          time: time,
-          left: false,
-          right: true,
-          source: "Free Republic"
-        });
-      }
+      var newArticle = new Article(rightResults);
+      newArticle.save().then(function(){ savedRight++; }).catch(function(err) { console.log(err); });
     });
-
-    // Save articles with duplicate detection
-    for (const articleData of articles) {
-      const existing = await Article.findOne({ link: articleData.link });
-      if (!existing) {
-        const newArticle = new Article(articleData);
-        await newArticle.save();
-        newCount++;
-      } else {
-        duplicateCount++;
-      }
-    }
-
-    console.log(`Right links scraped! New: ${newCount}, Duplicates skipped: ${duplicateCount}`);
+    console.log("Right items attempted to save:", savedRight);
+    console.log("Right links scraped!");
     res.redirect('/all');
   } catch (error) {
     console.error("Error scraping right links:", error.message);
@@ -199,7 +218,7 @@ app.get("/scrape/right", async function(req, res) {
 app.get("/scrape/news/center", async function(req, res) {
   try {
     // TODO: Implement BBC scraping
-    const response = await axios.get(process.env.SCRAPE_URL_CENTER || "http://www.bbc.com/news/world/us_and_canada");
+    const response = await httpClient.get(process.env.SCRAPE_URL_CENTER || "http://www.bbc.com/news/world/us_and_canada");
     // Add scraping logic here
     res.send("BBC scraping not yet implemented");
   } catch (error) {
@@ -286,6 +305,18 @@ app.delete("/articles/:id/note", async function(req, res) {
 });
 
 // END ROUTES //
+
+// Debug counts route
+app.get("/debug/counts", async function(req, res) {
+  try {
+    var leftCount = await Article.countDocuments({ left: true });
+    var rightCount = await Article.countDocuments({ right: true });
+    var total = await Article.countDocuments({});
+    res.json({ total: total, left: leftCount, right: rightCount });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Open and listen to port //
 app.listen(PORT, function() {
