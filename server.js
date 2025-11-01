@@ -192,6 +192,7 @@ app.get("/scrape/right", async function(req, res) {
     var linkStart = "http://www.freerepublic.com/";
     var savedRight = 0;
 
+    // Collect all article data
     $("li.article").each(function(i, element) {
       var rightResults = {
         link: linkStart + $(element).find("h3").children().attr("href"),
@@ -223,6 +224,83 @@ app.get("/scrape/news/center", async function(req, res) {
   } catch (error) {
     console.error("Error scraping BBC:", error.message);
     res.status(500).send("Error scraping BBC");
+  }
+});
+
+// NOTE/COMMENT ROUTES //
+
+// Get an article and its note by article ID
+app.get("/articles/:id", async function(req, res) {
+  try {
+    const article = await Article.findById(req.params.id).populate("note");
+    if (!article) {
+      return res.status(404).json({ error: "Article not found" });
+    }
+    res.json(article);
+  } catch (error) {
+    console.error("Error fetching article:", error.message);
+    res.status(500).json({ error: "Error fetching article" });
+  }
+});
+
+// Create or update a note for an article
+app.post("/articles/:id", async function(req, res) {
+  try {
+    const { header, text } = req.body;
+
+    // Validate input
+    if (!header || !text) {
+      return res.status(400).json({ error: "Header and text are required" });
+    }
+
+    // Create the note
+    const newNote = new Note({
+      header: header,
+      text: text
+    });
+
+    const savedNote = await newNote.save();
+
+    // Update the article with the note reference
+    const article = await Article.findByIdAndUpdate(
+      req.params.id,
+      { note: savedNote._id },
+      { new: true }
+    ).populate("note");
+
+    if (!article) {
+      return res.status(404).json({ error: "Article not found" });
+    }
+
+    res.json({ success: true, article: article });
+  } catch (error) {
+    console.error("Error saving note:", error.message);
+    res.status(500).json({ error: "Error saving note" });
+  }
+});
+
+// Delete a note from an article
+app.delete("/articles/:id/note", async function(req, res) {
+  try {
+    const article = await Article.findById(req.params.id);
+
+    if (!article) {
+      return res.status(404).json({ error: "Article not found" });
+    }
+
+    if (article.note) {
+      // Delete the note
+      await Note.findByIdAndDelete(article.note);
+
+      // Remove the note reference from the article
+      article.note = null;
+      await article.save();
+    }
+
+    res.json({ success: true, message: "Note deleted" });
+  } catch (error) {
+    console.error("Error deleting note:", error.message);
+    res.status(500).json({ error: "Error deleting note" });
   }
 });
 
