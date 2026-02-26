@@ -11,6 +11,7 @@ A news article aggregator that scrapes articles from different political perspec
 - 🎯 **Duplicate Detection**: Smart deduplication prevents article repetition
 - ✅ **Comprehensive Testing**: Full test coverage with Jest
 - 🐳 **Docker Support**: Production-ready containerization
+- 🚀 **Automated Deployment**: GitHub Actions deployment to Railway
 
 ## Tech Stack
 
@@ -135,6 +136,34 @@ docker run -d \
   --name cheery-scrapio \
   cheery-scrapio
 ```
+
+## Production Deployment
+
+### Railway (Recommended)
+
+This project includes automated deployment to Railway via GitHub Actions.
+
+**Quick Start:**
+
+1. Sign up at [Railway.app](https://railway.app)
+2. Create a new project and add MongoDB
+3. Add GitHub secrets (see below)
+4. Push to main branch - automatic deployment! 🚀
+
+**Required GitHub Secrets:**
+
+- `RAILWAY_TOKEN` - Your Railway API token
+- `RAILWAY_APP_URL` - Your Railway app URL
+
+📖 **Full deployment guide**: See [DEPLOYMENT.md](./DEPLOYMENT.md) for complete step-by-step instructions.
+
+**Features:**
+
+- ✅ Automatic deployment on push to main
+- ✅ Zero-downtime deployments
+- ✅ Health checks after deployment
+- ✅ Docker-based deployment
+- ✅ MongoDB included
 
 ## Development
 
