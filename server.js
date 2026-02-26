@@ -15,8 +15,8 @@ const scrapingRoutes = require('./routes/scraping');
 const app = express();
 
 // Global error handlers to avoid process exit on unexpected errors
-process.on('unhandledRejection', (reason) => logger.error('Unhandled Rejection:', reason));
-process.on('uncaughtException', (err) => logger.error('Uncaught Exception:', err));
+process.on('unhandledRejection', reason => logger.error('Unhandled Rejection:', reason));
+process.on('uncaughtException', err => logger.error('Uncaught Exception:', err));
 
 // Templating engine
 app.engine('handlebars', engine({ defaultLayout: 'main' }));
@@ -31,11 +31,12 @@ app.use(express.json());
 // Database
 mongoose.connect(config.mongodb.uri);
 const db = mongoose.connection;
-db.on('error', (error) => logger.error('Mongoose error:', error));
+db.on('error', error => logger.error('Mongoose error:', error));
 db.once('open', () => logger.info('Mongoose connection successful'));
 
 // Routes
 app.get('/', (req, res) => res.render('index'));
+app.get('/health', (req, res) => res.status(200).json({ status: 'ok' }));
 app.use('/', articleRoutes);
 app.use('/', scrapingRoutes);
 
@@ -46,7 +47,7 @@ app.get('/debug/counts', async (req, res) => {
     const [total, left, right] = await Promise.all([
       Article.countDocuments({}),
       Article.countDocuments({ left: true }),
-      Article.countDocuments({ right: true })
+      Article.countDocuments({ right: true }),
     ]);
     res.json({ total, left, right });
   } catch (error) {
