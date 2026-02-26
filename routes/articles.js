@@ -18,17 +18,37 @@
 
 const express = require('express');
 const router = express.Router();
+const { body, validationResult } = require('express-validator');
 const articleController = require('../controllers/articleController');
+const noteController = require('../controllers/noteController');
+
+// Validation middleware for note creation
+const validateNote = [
+  body('header')
+    .trim()
+    .notEmpty().withMessage('Title is required')
+    .isLength({ min: 3, max: 100 }).withMessage('Title must be between 3 and 100 characters'),
+  body('text')
+    .trim()
+    .notEmpty().withMessage('Comment is required')
+    .isLength({ min: 10, max: 1000 }).withMessage('Comment must be between 10 and 1000 characters'),
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    next();
+  }
+];
 
 // Article viewing routes
 router.get('/all', articleController.getAllArticles);
 router.get('/left', articleController.getLeftArticles);
 router.get('/right', articleController.getRightArticles);
-router.get('/articles/:id', articleController.getArticleById);
 
-// TODO FOR YOU: Add the note creation and deletion routes here
-// Hint: These should go to a noteController (which you'll create)
-// router.post('/articles/:id', noteController.createNote);
-// router.delete('/articles/:id/note', noteController.deleteNote);
+// Article + note routes
+router.get('/articles/:id', articleController.getArticleById);
+router.post('/articles/:id', validateNote, noteController.createNote);
+router.delete('/articles/:id/note', noteController.deleteNote);
 
 module.exports = router;
