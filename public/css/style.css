@@ -230,7 +230,7 @@ ul {
 
 .masthead-tagline {
   font-size: 0.6875rem;
-  color: var(--fg-3);
+  color: var(--fg-2);
   letter-spacing: 0.09em;
   text-transform: uppercase;
 }
@@ -258,8 +258,17 @@ main {
   .columns {
     grid-template-columns: 1fr 1fr;
   }
+  .col-left {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .col-right {
+    grid-column: 2;
+    grid-row: 1;
+  }
   .col-center {
     grid-column: 1 / -1;
+    grid-row: 2;
   }
 }
 
@@ -314,7 +323,7 @@ main {
 
 .col-source {
   font-size: 0.6875rem;
-  color: var(--fg-3);
+  color: var(--fg-2);
   letter-spacing: 0.05em;
   font-weight: 500;
 }
@@ -383,7 +392,7 @@ main {
 
 .card-meta {
   font-size: 0.75rem;
-  color: var(--fg-3);
+  color: var(--fg-2);
   margin-bottom: 10px;
   font-variant-numeric: tabular-nums;
 }
@@ -396,7 +405,7 @@ main {
 
 .card-note-badge {
   font-size: 0.6875rem;
-  color: var(--fg-3);
+  color: var(--fg-2);
   display: flex;
   align-items: center;
   gap: 3px;
@@ -563,6 +572,13 @@ main {
   min-height: 80px;
 }
 
+.dialog-error {
+  font-size: 0.8125rem;
+  color: var(--danger);
+  margin: 4px 0 8px;
+  min-height: 1.2em;
+}
+
 .dialog-actions {
   display: flex;
   justify-content: flex-end;
@@ -635,6 +651,7 @@ main {
 }
 .toast.error {
   background: var(--danger);
+  color: #fff;
 }
 
 @media (prefers-reduced-motion: reduce) {

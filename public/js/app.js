@@ -53,11 +53,17 @@ document.addEventListener('submit', async e => {
   e.preventDefault();
 
   const id = form.dataset.id;
+  const errorEl = form.querySelector('.dialog-error');
+  const setError = msg => {
+    if (errorEl) errorEl.textContent = msg;
+  };
+  if (errorEl) errorEl.textContent = '';
+
   const header = form.querySelector(`#note-header-${id}`).value.trim();
   const text = form.querySelector(`#note-text-${id}`).value.trim();
 
   if (!header || !text) {
-    showToast('Please fill in both fields.', 'error');
+    setError('Please fill in both fields.');
     return;
   }
 
@@ -93,7 +99,7 @@ document.addEventListener('submit', async e => {
       card.querySelector('.card-footer').prepend(badge);
     }
   } catch (err) {
-    showToast(err.message || 'Error saving note.', 'error');
+    setError(err.message || 'Error saving note.');
   } finally {
     saveBtn.disabled = false;
     saveBtn.textContent = 'Save Note';
