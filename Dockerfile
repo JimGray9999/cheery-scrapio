@@ -7,8 +7,8 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install production dependencies (HUSKY=0 prevents prepare script from running)
-RUN HUSKY=0 npm ci --omit=dev
+# Install production dependencies; --ignore-scripts skips the prepare/husky hook
+RUN npm ci --omit=dev --ignore-scripts
 
 # Production stage
 FROM node:20-alpine
