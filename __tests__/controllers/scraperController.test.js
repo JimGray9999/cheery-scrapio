@@ -42,14 +42,14 @@ describe('Scraper Controller', () => {
   });
 
   describe('scrapeRight', () => {
-    test('should scrape right articles and redirect to /all', async () => {
+    test('should scrape right articles and redirect to /scrape/news/center', async () => {
       const mockResult = { newCount: 8, duplicateCount: 3 };
       scraperService.scrapeRightArticles = jest.fn().mockResolvedValue(mockResult);
 
       await scraperController.scrapeRight(req, res);
 
       expect(scraperService.scrapeRightArticles).toHaveBeenCalled();
-      expect(res.redirect).toHaveBeenCalledWith('/all');
+      expect(res.redirect).toHaveBeenCalledWith('/scrape/news/center');
     });
 
     test('should handle scraping errors', async () => {
