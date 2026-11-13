@@ -1,6 +1,3 @@
-/* SERVER FOR THE APPLICATION */
-/******************************/
-
 const config = require('./config/config');
 const logger = require('./utils/logger');
 
@@ -29,7 +26,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
 // Database
-mongoose.connect(config.mongodb.uri);
+mongoose.connect(config.mongodb.uri, { serverSelectionTimeoutMS: 5000 });
 const db = mongoose.connection;
 db.on('error', error => logger.error('Mongoose error:', error));
 db.once('open', () => logger.info('Mongoose connection successful'));
@@ -40,19 +37,16 @@ app.get('/health', (req, res) => res.status(200).json({ status: 'ok' }));
 app.use('/', articleRoutes);
 app.use('/', scrapingRoutes);
 
-// Debug route
-app.get('/debug/counts', async (req, res) => {
-  try {
-    const Article = require('./models/Article');
-    const [total, left, right] = await Promise.all([
-      Article.countDocuments({}),
-      Article.countDocuments({ left: true }),
-      Article.countDocuments({ right: true }),
-    ]);
-    res.json({ total, left, right });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+// 404 handler
+app.use((req, res) => {
+  res.status(404).render('index', { notFound: true });
+});
+
+// Global error handler — catches anything Express passes via next(err)
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+  logger.error('Unhandled error:', err);
+  res.status(500).json({ error: 'Internal server error' });
 });
 
 // Start server

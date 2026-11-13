@@ -16,14 +16,14 @@ Track ongoing improvements to the codebase. Check off items as they land on `mai
 
 ## Medium effort
 
-- [ ] No 404 handler — unmatched routes fall through silently; add `app.use` catch-all before `app.listen`
-- [ ] No global error middleware — add `(err, req, res, next)` handler so unhandled throws return formatted 500s
+- [x] No 404 handler — added `app.use` catch-all before error handler in `server.js`
+- [x] No global error middleware — added `(err, req, res, next)` handler in `server.js`
+- [x] No mongoose connection timeout — added `serverSelectionTimeoutMS: 5000` to `mongoose.connect`
+- [x] Routes/config/logger in `collectCoverageFrom` but have zero tests — excluded from coverage; thresholds raised to reflect only controllers/services
 - [ ] `/debug/counts` is unauthenticated — gate behind a secret header or remove before any real deploy
-- [ ] No mongoose connection timeout — add `serverSelectionTimeoutMS` option to `mongoose.connect` to prevent cold-start hangs
 - [ ] No rate limiting — add `express-rate-limit` to scrape endpoints and `POST /articles/:id`
 - [ ] Scrape endpoints are unauthenticated GETs — add a secret-header check or convert to POST
-- [ ] Routes/config/logger in `collectCoverageFrom` but have zero tests — either exclude them or add smoke tests
-- [ ] No integration/route-level tests — add a supertest suite covering `/all` and `/articles/:id`
+- [ ] No integration/route-level tests — add a supertest suite covering `/all`, `/articles/:id`, and `articleController` (currently 0% covered)
 
 ---
 
