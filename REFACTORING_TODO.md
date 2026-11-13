@@ -5,6 +5,7 @@ I've set up the foundation and examples for you. Now it's your turn to complete 
 ## What I've Done For You ✅
 
 I created:
+
 1. **Directory structure**: `config/`, `controllers/`, `routes/`, `services/`, `utils/`
 2. **Config module**: `config/config.js` - Centralizes environment variables
 3. **Logger utility**: `utils/logger.js` - Structured logging with Winston
@@ -44,11 +45,12 @@ async function deleteNote(req, res) {
 
 module.exports = {
   createNote,
-  deleteNote
+  deleteNote,
 };
 ```
 
 **Hints**:
+
 - Import `Note` model from `../models/Note`
 - Import `Article` model from `../models/Article`
 - Import `logger` from `../utils/logger`
@@ -103,7 +105,7 @@ async function scrapeLeft(req, res) {
 module.exports = {
   scrapeLeft,
   scrapeRight,
-  scrapeCenter
+  scrapeCenter,
 };
 ```
 
@@ -126,6 +128,7 @@ router.get('/scrape/news/center', scraperController.scrapeCenter);
 **What to do**: Create a `scrapeCenterArticles()` function for BBC news.
 
 **Challenge**: BBC's HTML structure will be different. You'll need to:
+
 1. Use axios to fetch the BBC URL from config
 2. Use cheerio to parse the HTML
 3. Inspect the BBC website to find the right selectors
@@ -133,6 +136,7 @@ router.get('/scrape/news/center', scraperController.scrapeCenter);
 5. Save with `left: false, right: false, source: 'BBC'`
 
 **Hints**:
+
 - Visit http://www.bbc.com/news/world/us_and_canada in your browser
 - Right-click > Inspect to see the HTML structure
 - Look for repeated elements (probably article tags or divs)
@@ -153,19 +157,23 @@ const { body, validationResult } = require('express-validator');
 const validateNote = [
   body('header')
     .trim()
-    .notEmpty().withMessage('Title is required')
-    .isLength({ min: 3, max: 100 }).withMessage('Title must be 3-100 characters'),
+    .notEmpty()
+    .withMessage('Title is required')
+    .isLength({ min: 3, max: 100 })
+    .withMessage('Title must be 3-100 characters'),
   body('text')
     .trim()
-    .notEmpty().withMessage('Comment is required')
-    .isLength({ min: 10, max: 1000 }).withMessage('Comment must be 10-1000 characters'),
+    .notEmpty()
+    .withMessage('Comment is required')
+    .isLength({ min: 10, max: 1000 })
+    .withMessage('Comment must be 10-1000 characters'),
   (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
     next();
-  }
+  },
 ];
 
 // Use in route:
@@ -183,6 +191,7 @@ router.post('/articles/:id', validateNote, noteController.createNote);
 **Steps**:
 
 1. **Add new imports at the top** (after the model imports):
+
 ```javascript
 const config = require('./config/config');
 const logger = require('./utils/logger');
@@ -191,11 +200,13 @@ const scrapingRoutes = require('./routes/scraping');
 ```
 
 2. **Update the database connection** (around line 41):
+
 ```javascript
 mongoose.connect(config.mongodb.uri);
 ```
 
 3. **Replace console.log with logger** throughout:
+
 ```javascript
 // OLD: console.log("Mongoose Error: ", error);
 // NEW: logger.error("Mongoose Error:", error);
@@ -205,12 +216,13 @@ mongoose.connect(config.mongodb.uri);
 ```
 
 4. **Remove old route definitions** (lines 59-286) and replace with:
+
 ```javascript
 // ROUTES //
 
 // Home route
-app.get("/", function(req, res) {
-  res.render("index");
+app.get('/', function (req, res) {
+  res.render('index');
 });
 
 // Use modular routes
@@ -221,8 +233,9 @@ app.use('/', scrapingRoutes);
 ```
 
 5. **Update the server start message**:
+
 ```javascript
-app.listen(config.port, function() {
+app.listen(config.port, function () {
   logger.info(`Server listening on port: ${config.port}`);
   logger.info(`Go to http://localhost:${config.port}`);
 });
@@ -268,12 +281,14 @@ Response ← Views ← Controllers ←─────────┘
 ### Why This Is Better
 
 **Before** (all in server.js):
+
 - 296 lines of mixed concerns
 - Hard to test
 - Hard to find code
 - Hard to reuse logic
 
 **After** (modular):
+
 - Small, focused files
 - Easy to test each piece
 - Clear organization
@@ -293,6 +308,7 @@ Response ← Views ← Controllers ←─────────┘
 5. Ask me questions! I'm here to help
 
 **Common Issues**:
+
 - "Module not found": Check your require() paths (use `../` to go up a directory)
 - "Cannot read property": Make sure you're exporting functions correctly
 - "500 error": Check the logs - Winston will show you the error
@@ -316,6 +332,7 @@ Do the tasks in this order:
 ## Commit Strategy 💾
 
 After each working task:
+
 ```bash
 git add .
 git commit -m "Refactor: Add note controller"

@@ -18,26 +18,29 @@ const config = {
 
   // Database Configuration
   mongodb: {
-    uri: process.env.MONGODB_URI || 'mongodb://localhost/cheery-scrapio'
+    uri: process.env.MONGODB_URI || 'mongodb://localhost/cheery-scrapio',
   },
 
   // Session Configuration
   session: {
-    secret: process.env.SESSION_SECRET || 'your-secret-key-here'
+    secret: process.env.SESSION_SECRET || 'your-secret-key-here',
   },
 
   // Scraping URLs
   scraping: {
-    leftUrl: process.env.SCRAPE_URL_LEFT || 'https://www.democraticunderground.com/?com=forum&id=1014',
-    rightUrl: process.env.SCRAPE_URL_RIGHT || 'http://www.freerepublic.com/tag/breaking-news/index?tab=articles',
-    centerUrl: process.env.SCRAPE_URL_CENTER || 'http://www.bbc.com/news/world/us_and_canada'
+    leftUrl:
+      process.env.SCRAPE_URL_LEFT || 'https://www.democraticunderground.com/?com=forum&id=1014',
+    rightUrl:
+      process.env.SCRAPE_URL_RIGHT ||
+      'http://www.freerepublic.com/tag/breaking-news/index?tab=articles',
+    centerUrl: process.env.SCRAPE_URL_CENTER || 'http://www.bbc.com/news/world/us_and_canada',
   },
 
   // Logging Configuration
   logging: {
     level: process.env.LOG_LEVEL || 'info',
-    file: process.env.LOG_FILE || 'logs/app.log'
-  }
+    file: process.env.LOG_FILE || 'logs/app.log',
+  },
 };
 
 // Validate critical configuration
