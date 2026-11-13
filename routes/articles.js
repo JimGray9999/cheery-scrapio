@@ -26,19 +26,23 @@ const noteController = require('../controllers/noteController');
 const validateNote = [
   body('header')
     .trim()
-    .notEmpty().withMessage('Title is required')
-    .isLength({ min: 3, max: 100 }).withMessage('Title must be between 3 and 100 characters'),
+    .notEmpty()
+    .withMessage('Title is required')
+    .isLength({ min: 3, max: 100 })
+    .withMessage('Title must be between 3 and 100 characters'),
   body('text')
     .trim()
-    .notEmpty().withMessage('Comment is required')
-    .isLength({ min: 10, max: 1000 }).withMessage('Comment must be between 10 and 1000 characters'),
+    .notEmpty()
+    .withMessage('Comment is required')
+    .isLength({ min: 10, max: 1000 })
+    .withMessage('Comment must be between 10 and 1000 characters'),
   (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
     next();
-  }
+  },
 ];
 
 // Article viewing routes

@@ -86,5 +86,5 @@ module.exports = {
   getAllArticles,
   getLeftArticles,
   getRightArticles,
-  getArticleById
+  getArticleById,
 };

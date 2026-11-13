@@ -31,7 +31,7 @@ async function scrapeRight(req, res) {
   try {
     const result = await scraperService.scrapeRightArticles();
     logger.info(`Right scrape done: ${result.newCount} new, ${result.duplicateCount} duplicates`);
-    res.redirect('/all');
+    res.redirect('/scrape/news/center');
   } catch (error) {
     logger.error('Error scraping right articles:', error);
     res.status(500).send('Error scraping right links');

@@ -4,5 +4,13 @@
   "singleQuote": true,
   "printWidth": 100,
   "tabWidth": 2,
-  "arrowParens": "avoid"
+  "arrowParens": "avoid",
+  "overrides": [
+    {
+      "files": ["*.handlebars", "*.hbs"],
+      "options": {
+        "singleQuote": false
+      }
+    }
+  ]
 }

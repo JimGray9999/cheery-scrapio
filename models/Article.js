@@ -1,19 +1,19 @@
-var mongoose = require("mongoose");
+var mongoose = require('mongoose');
 
 var Schema = mongoose.Schema;
 
 var ArticleSchema = new Schema({
   title: {
     type: String,
-    required: true
+    required: true,
   },
   link: {
     type: String,
-    required: true
+    required: true,
   },
   time: {
     type: String,
-    required: true
+    required: true,
   },
   left: {
     type: Boolean,
@@ -22,17 +22,17 @@ var ArticleSchema = new Schema({
   right: {
     type: Boolean,
     required: true,
-  }, 
+  },
   source: {
     type: String,
-    required: true
+    required: true,
   },
   note: {
     type: Schema.Types.ObjectId,
-    ref: "Note",
-  }
+    ref: 'Note',
+  },
 });
 
-var Article = mongoose.model("Article", ArticleSchema);
+var Article = mongoose.model('Article', ArticleSchema);
 
 module.exports = Article;

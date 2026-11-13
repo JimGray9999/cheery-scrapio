@@ -34,23 +34,24 @@ const logger = winston.createLogger({
   transports: [
     // Console output (always enabled)
     new winston.transports.Console({
-      format: winston.format.combine(
-        winston.format.colorize(),
-        logFormat
-      )
-    })
-  ]
+      format: winston.format.combine(winston.format.colorize(), logFormat),
+    }),
+  ],
 });
 
 // In production, also log to file
 if (config.env === 'production') {
-  logger.add(new winston.transports.File({
-    filename: 'logs/error.log',
-    level: 'error'
-  }));
-  logger.add(new winston.transports.File({
-    filename: config.logging.file
-  }));
+  logger.add(
+    new winston.transports.File({
+      filename: 'logs/error.log',
+      level: 'error',
+    })
+  );
+  logger.add(
+    new winston.transports.File({
+      filename: config.logging.file,
+    })
+  );
 }
 
 module.exports = logger;

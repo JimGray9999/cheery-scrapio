@@ -1,70 +1,129 @@
-$(document).ready(function() {
-  // Initialize all Materialize modals
-  $('.modal').modal();
+/* Balance — vanilla JS, no jQuery */
 
-  // Handle saving notes when "Post Comment" button is clicked
-  $(document).on("click", ".save-note", function(event) {
-    event.preventDefault();
+// ── Toast ────────────────────────────────────────────────
+let toastTimer;
 
-    const articleId = $(this).attr("data-id");
-    const headerValue = $("#note-header-" + articleId).val().trim();
-    const textValue = $("#note-text-" + articleId).val().trim();
+function showToast(message, type = '') {
+  const toast = document.getElementById('toast');
+  if (!toast) return;
+  clearTimeout(toastTimer);
+  toast.textContent = message;
+  toast.className = 'toast show' + (type ? ' ' + type : '');
+  toastTimer = setTimeout(() => {
+    toast.className = 'toast';
+  }, 3500);
+}
 
-    // Validate input
-    if (!headerValue || !textValue) {
-      alert("Please fill in both the title and comment fields.");
-      return;
-    }
+// ── Dialogs ──────────────────────────────────────────────
 
-    // Send POST request to save the note
-    $.ajax({
-      method: "POST",
-      url: "/articles/" + articleId,
-      data: {
-        header: headerValue,
-        text: textValue
-      }
-    })
-    .done(function(response) {
-      console.log("Note saved successfully:", response);
-      alert("Comment posted successfully!");
+function openDialog(id) {
+  const dialog = document.getElementById('dialog-' + id);
+  if (dialog && typeof dialog.showModal === 'function') dialog.showModal();
+}
 
-      // Clear the form fields
-      $("#note-header-" + articleId).val("");
-      $("#note-text-" + articleId).val("");
+function closeDialog(id) {
+  const dialog = document.getElementById('dialog-' + id);
+  if (dialog) dialog.close();
+}
 
-      // Close the modal
-      const modalInstance = M.Modal.getInstance($("#modal-" + articleId)[0]);
-      modalInstance.close();
-    })
-    .fail(function(error) {
-      console.error("Error saving note:", error);
-      alert("Error posting comment. Please try again.");
-    });
-  });
-
-  // Optional: View existing notes
-  $(document).on("click", ".card", function(event) {
-    // Only trigger if clicking on the card itself, not links
-    if ($(event.target).is("a") || $(event.target).closest("a").length > 0) {
-      return;
-    }
-
-    const articleId = $(this).attr("data-id");
-
-    // Fetch article with note
-    $.ajax({
-      method: "GET",
-      url: "/articles/" + articleId
-    })
-    .done(function(article) {
-      if (article.note) {
-        console.log("Article has note:", article.note);
-        // You could display the existing note here if desired
-      }
-    })
-    .fail(function(error) {
-      console.error("Error fetching article:", error);
-    });
-  });
+// Open on "Add note" button click
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.btn-comment');
+  if (btn) openDialog(btn.dataset.id);
 });
+
+// Close via ✕ button or Cancel
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.dialog-close, .btn-cancel');
+  if (btn) closeDialog(btn.dataset.id);
+});
+
+// Close when clicking the backdrop (outside the dialog box)
+document.addEventListener('click', e => {
+  if (e.target.tagName === 'DIALOG') {
+    e.target.close();
+  }
+});
+
+// ── Save note ────────────────────────────────────────────
+
+document.addEventListener('submit', async e => {
+  const form = e.target.closest('.dialog-form');
+  if (!form) return;
+  e.preventDefault();
+
+  const id = form.dataset.id;
+  const errorEl = form.querySelector('.dialog-error');
+  const setError = msg => {
+    if (errorEl) errorEl.textContent = msg;
+  };
+  if (errorEl) errorEl.textContent = '';
+
+  const header = form.querySelector(`#note-header-${id}`).value.trim();
+  const text = form.querySelector(`#note-text-${id}`).value.trim();
+
+  if (!header || !text) {
+    setError('Please fill in both fields.');
+    return;
+  }
+
+  const saveBtn = form.querySelector('.btn-save');
+  saveBtn.disabled = true;
+  saveBtn.textContent = 'Saving…';
+
+  try {
+    const res = await fetch('/articles/' + id, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ header, text }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      // express-validator returns { errors: [...] } on 400
+      const msg = data.errors?.[0]?.msg || data.error || 'Server error';
+      throw new Error(msg);
+    }
+
+    form.reset();
+    closeDialog(id);
+    showToast('Note saved!');
+
+    // Add note badge to the card if not already present
+    const card = document.querySelector(`.article-card[data-id="${id}"]`);
+    if (card && !card.querySelector('.card-note-badge')) {
+      const badge = document.createElement('span');
+      badge.className = 'card-note-badge';
+      badge.textContent = '✦ Note saved';
+      card.querySelector('.card-footer').prepend(badge);
+    }
+  } catch (err) {
+    setError(err.message || 'Error saving note.');
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'Save Note';
+  }
+});
+
+// ── Active nav link ──────────────────────────────────────
+
+(function markActiveNav() {
+  const path = window.location.pathname;
+  document.querySelectorAll('.nav-link[data-path]').forEach(link => {
+    if (link.dataset.path === path) link.classList.add('active');
+  });
+})();
+
+// ── :has() fallback for empty-state ─────────────────────
+// Modern browsers handle this in CSS; this covers anything that doesn't.
+
+(function emptyStateFallback() {
+  if (CSS.supports('selector(:has(.x))')) return;
+  document.querySelectorAll('.col-articles').forEach(col => {
+    if (!col.querySelector('.article-card')) {
+      const es = col.querySelector('.empty-state');
+      if (es) es.style.display = 'block';
+    }
+  });
+})();

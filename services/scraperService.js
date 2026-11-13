@@ -16,9 +16,10 @@ const config = require('../config/config');
 const httpClient = axios.create({
   timeout: 10000,
   headers: {
-    'User-Agent': 'Mozilla/5.0 (compatible; cheery-scrapio/1.0; +https://github.com/JimGray9999/cheery-scrapio)'
+    'User-Agent':
+      'Mozilla/5.0 (compatible; cheery-scrapio/1.0; +https://github.com/JimGray9999/cheery-scrapio)',
   },
-  maxRedirects: 5
+  maxRedirects: 5,
 });
 
 /**
@@ -34,8 +35,8 @@ async function upsertArticles(articles) {
     updateOne: {
       filter: { link: a.link },
       update: { $setOnInsert: a },
-      upsert: true
-    }
+      upsert: true,
+    },
   }));
 
   const result = await Article.bulkWrite(ops, { ordered: false });
@@ -66,15 +67,19 @@ async function scrapeLeftArticles() {
   }
 
   if (anchors.length === 0) {
-    anchors = $('a').filter(function(i, el) {
+    anchors = $('a').filter(function (i, el) {
       const href = $(el).attr('href') || '';
-      return href.includes('?com=view_post') || href.includes('?com=discuss') || href.includes('?com=thread');
+      return (
+        href.includes('?com=view_post') ||
+        href.includes('?com=discuss') ||
+        href.includes('?com=thread')
+      );
     });
   }
 
   logger.info(`DU: found ${anchors.length} candidate links`);
 
-  anchors.each(function(i, element) {
+  anchors.each(function (i, element) {
     const href = $(element).attr('href');
     const title = $(element).text().trim();
 
@@ -82,13 +87,23 @@ async function scrapeLeftArticles() {
 
     const link = href.startsWith('http') ? href : linkStart + href;
     const row = $(element).closest('tr');
-    const time = row.find('td.time').text().trim() || row.find('td:nth-child(4)').text().trim() || '';
+    const time =
+      row.find('td.time').text().trim() || row.find('td:nth-child(4)').text().trim() || '';
 
-    articles.push({ title, link, time, left: true, right: false, source: 'Democratic Underground' });
+    articles.push({
+      title,
+      link,
+      time,
+      left: true,
+      right: false,
+      source: 'Democratic Underground',
+    });
   });
 
   const counts = await upsertArticles(articles);
-  logger.info(`Left scraping complete: ${counts.newCount} new, ${counts.duplicateCount} duplicates`);
+  logger.info(
+    `Left scraping complete: ${counts.newCount} new, ${counts.duplicateCount} duplicates`
+  );
 
   return { ...counts, total: articles.length };
 }
@@ -106,18 +121,27 @@ async function scrapeRightArticles() {
   const linkStart = 'http://www.freerepublic.com/';
   const articles = [];
 
-  $('li.article').each(function(i, element) {
+  $('li.article').each(function (i, element) {
     const href = $(element).find('h3').children().attr('href');
     const title = $(element).find('h3').children().text().trim();
     const time = $(element).find('.date').text().trim();
 
     if (!title || !href) return;
 
-    articles.push({ link: linkStart + href, title, time, left: false, right: true, source: 'Free Republic' });
+    articles.push({
+      link: linkStart + href,
+      title,
+      time,
+      left: false,
+      right: true,
+      source: 'Free Republic',
+    });
   });
 
   const counts = await upsertArticles(articles);
-  logger.info(`Right scraping complete: ${counts.newCount} new, ${counts.duplicateCount} duplicates`);
+  logger.info(
+    `Right scraping complete: ${counts.newCount} new, ${counts.duplicateCount} duplicates`
+  );
 
   return { ...counts, total: articles.length };
 }
@@ -136,10 +160,11 @@ async function scrapeCenterArticles() {
   const articles = [];
   const seen = new Set();
 
-  $('a[data-testid="internal-link"]').each(function(i, element) {
+  $('a[data-testid="internal-link"]').each(function (i, element) {
     const href = $(element).attr('href');
-    const title = $(element).find('h2, h3, [data-testid="card-headline"]').text().trim()
-      || $(element).text().trim();
+    const title =
+      $(element).find('h2, h3, [data-testid="card-headline"]').text().trim() ||
+      $(element).text().trim();
 
     if (!href || !title || title.length < 10) return;
 
@@ -153,7 +178,9 @@ async function scrapeCenterArticles() {
   logger.info(`BBC: found ${articles.length} candidate articles`);
 
   const counts = await upsertArticles(articles);
-  logger.info(`Center scraping complete: ${counts.newCount} new, ${counts.duplicateCount} duplicates`);
+  logger.info(
+    `Center scraping complete: ${counts.newCount} new, ${counts.duplicateCount} duplicates`
+  );
 
   return { ...counts, total: articles.length };
 }
