@@ -52,6 +52,21 @@ describe('Scraper Service', () => {
       expect(result.total).toBe(2);
     });
 
+    test('falls back to last-resort anchor selector when no structured links found', async () => {
+      const mockHtml = `
+        <html><body>
+          <a href="https://www.democraticunderground.com/discuss/duboard.php?az=view_all">
+            This is a long enough title to pass the filter
+          </a>
+        </body></html>
+      `;
+      mockHttpClient.get.mockResolvedValue({ data: mockHtml });
+      Article.bulkWrite = jest.fn().mockResolvedValue({ upsertedCount: 1 });
+
+      const result = await scraperService.scrapeLeftArticles();
+      expect(result.total).toBe(1);
+    });
+
     test('should handle scraping errors gracefully', async () => {
       mockHttpClient.get.mockRejectedValue(new Error('Network error'));
 
@@ -127,6 +142,21 @@ describe('Scraper Service', () => {
       expect(result.newCount).toBe(2);
       expect(result.duplicateCount).toBe(0);
       expect(result.total).toBe(2);
+    });
+
+    test('falls back to alternative BBC selector when data-testid not found', async () => {
+      const mockHtml = `
+        <html><body>
+          <a href="/news/articles/abc123" class="gs-c-promo-heading">
+            A proper BBC article with a long enough title
+          </a>
+        </body></html>
+      `;
+      mockHttpClient.get.mockResolvedValue({ data: mockHtml });
+      Article.bulkWrite = jest.fn().mockResolvedValue({ upsertedCount: 1 });
+
+      const result = await scraperService.scrapeCenterArticles();
+      expect(result.total).toBeGreaterThanOrEqual(1);
     });
 
     test('should filter out short titles', async () => {

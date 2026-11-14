@@ -29,6 +29,6 @@ Track ongoing improvements to the codebase. Check off items as they land on `mai
 
 ## Bigger lift
 
-- [ ] No pagination — all articles load at once; add server-side cursor pagination or infinite scroll
-- [ ] Helmet CSP not configured — set a custom `contentSecurityPolicy` directive to block inline script injection
-- [ ] MongoDB has no auth in `docker-compose.yml` — add `MONGO_INITDB_ROOT_USERNAME/PASSWORD` and an authenticated URI for production
+- [x] No pagination — added cursor-based pagination (`GET /api/articles?filter=&before=`) with 20 articles per column and "Load more" button; uses `_id` as cursor to avoid offset drift
+- [x] Helmet CSP not configured — added explicit `contentSecurityPolicy` directives in `app.js` covering Google Fonts (googleapis.com + gstatic.com), blocking inline scripts
+- [x] MongoDB has no auth in `docker-compose.yml` — added `MONGO_INITDB_ROOT_USERNAME/PASSWORD`, authenticated URI with `?authSource=admin`, and auth-aware healthcheck; credentials loaded from `.env` via `MONGO_USERNAME`/`MONGO_PASSWORD`
