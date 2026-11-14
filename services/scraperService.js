@@ -53,68 +53,28 @@ async function upsertArticles(articles) {
 }
 
 /**
- * Scrape left-leaning articles from Democratic Underground
+ * Fetch left-leaning articles from The Guardian API
  * @returns {Promise<Object>} { newCount, duplicateCount, total }
  */
 async function scrapeLeftArticles() {
-  logger.info('Starting left article scraping...');
+  logger.info('Starting left article scraping (Guardian API)...');
 
-  const response = await httpClient.get(config.scraping.leftUrl);
-  const $ = cheerio.load(response.data);
+  const apiKey = config.scraping.guardianApiKey;
+  const url = `https://content.guardianapis.com/search?api-key=${apiKey}&show-fields=headline&section=politics&order-by=newest&page-size=20`;
 
-  const linkStart = 'https://www.democraticunderground.com';
-  const articles = [];
+  const response = await httpClient.get(url, { headers: { Accept: 'application/json' } });
+  const results = response.data?.response?.results || [];
 
-  // Try specific selector first, fall back progressively
-  let anchors = $("a[href*='?com=view_post'][href*='forum=1014']");
+  const articles = results.map(item => ({
+    title: item.fields?.headline || item.webTitle,
+    link: item.webUrl,
+    time: item.webPublicationDate || '',
+    left: true,
+    right: false,
+    source: 'The Guardian',
+  }));
 
-  if (anchors.length === 0) {
-    anchors = $('td.subject a, td.title a, .subject a, .title a');
-  }
-
-  if (anchors.length === 0) {
-    anchors = $('a').filter(function (i, el) {
-      const href = $(el).attr('href') || '';
-      return (
-        href.includes('?com=view_post') ||
-        href.includes('?com=discuss') ||
-        href.includes('?com=thread') ||
-        href.includes('/discuss/')
-      );
-    });
-  }
-
-  if (anchors.length === 0) {
-    // Last resort: any link that looks like a forum post
-    anchors = $('a').filter(function (i, el) {
-      const title = $(el).text().trim();
-      const href = $(el).attr('href') || '';
-      return title.length > 15 && href.includes('democraticunderground.com');
-    });
-  }
-
-  logger.info(`DU: found ${anchors.length} candidate links`);
-
-  anchors.each(function (i, element) {
-    const href = $(element).attr('href');
-    const title = $(element).text().trim();
-
-    if (!href || !title || title.toLowerCase().includes('view all')) return;
-
-    const link = href.startsWith('http') ? href : linkStart + href;
-    const row = $(element).closest('tr');
-    const time =
-      row.find('td.time').text().trim() || row.find('td:nth-child(4)').text().trim() || '';
-
-    articles.push({
-      title,
-      link,
-      time,
-      left: true,
-      right: false,
-      source: 'Democratic Underground',
-    });
-  });
+  logger.info(`Guardian: found ${articles.length} articles`);
 
   const counts = await upsertArticles(articles);
   logger.info(

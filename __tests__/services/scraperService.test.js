@@ -22,25 +22,29 @@ describe('Scraper Service', () => {
   });
 
   describe('scrapeLeftArticles', () => {
-    test('should scrape and parse left-leaning articles', async () => {
-      const mockHtml = `
-        <html>
-          <body>
-            <table>
-              <tr>
-                <td class="subject"><a href="?com=view_post&forum=1014&pid=123">Article Title 1</a></td>
-                <td class="time">2:30 PM</td>
-              </tr>
-              <tr>
-                <td class="subject"><a href="?com=view_post&forum=1014&pid=456">Article Title 2</a></td>
-                <td class="time">3:45 PM</td>
-              </tr>
-            </table>
-          </body>
-        </html>
-      `;
+    test('should fetch and parse Guardian API articles', async () => {
+      const mockResponse = {
+        data: {
+          response: {
+            results: [
+              {
+                webTitle: 'Article Title 1',
+                webUrl: 'https://www.theguardian.com/politics/2024/article-1',
+                webPublicationDate: '2024-01-01T10:00:00Z',
+                fields: { headline: 'Article Title 1' },
+              },
+              {
+                webTitle: 'Article Title 2',
+                webUrl: 'https://www.theguardian.com/politics/2024/article-2',
+                webPublicationDate: '2024-01-01T11:00:00Z',
+                fields: { headline: 'Article Title 2' },
+              },
+            ],
+          },
+        },
+      };
 
-      mockHttpClient.get.mockResolvedValue({ data: mockHtml });
+      mockHttpClient.get.mockResolvedValue(mockResponse);
       Article.bulkWrite = jest.fn().mockResolvedValue({ upsertedCount: 2 });
 
       const result = await scraperService.scrapeLeftArticles();
@@ -52,19 +56,12 @@ describe('Scraper Service', () => {
       expect(result.total).toBe(2);
     });
 
-    test('falls back to last-resort anchor selector when no structured links found', async () => {
-      const mockHtml = `
-        <html><body>
-          <a href="https://www.democraticunderground.com/discuss/duboard.php?az=view_all">
-            This is a long enough title to pass the filter
-          </a>
-        </body></html>
-      `;
-      mockHttpClient.get.mockResolvedValue({ data: mockHtml });
-      Article.bulkWrite = jest.fn().mockResolvedValue({ upsertedCount: 1 });
+    test('handles empty Guardian API response', async () => {
+      mockHttpClient.get.mockResolvedValue({ data: { response: { results: [] } } });
+      Article.bulkWrite = jest.fn().mockResolvedValue({ upsertedCount: 0 });
 
       const result = await scraperService.scrapeLeftArticles();
-      expect(result.total).toBe(1);
+      expect(result.total).toBe(0);
     });
 
     test('should handle scraping errors gracefully', async () => {
