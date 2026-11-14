@@ -53,4 +53,23 @@ async function scrapeCenter(req, res) {
   }
 }
 
-module.exports = { scrapeLeft, scrapeRight, scrapeCenter };
+/**
+ * Run full scrape: left → right → center in sequence
+ * @route POST /scrape
+ */
+async function scrapeAll(req, res) {
+  try {
+    const left = await scraperService.scrapeLeftArticles();
+    const right = await scraperService.scrapeRightArticles();
+    const center = await scraperService.scrapeCenterArticles();
+    logger.info(
+      `Full scrape done: left=${left.newCount}, right=${right.newCount}, center=${center.newCount}`
+    );
+    res.redirect('/all');
+  } catch (error) {
+    logger.error('Error running full scrape:', error);
+    res.status(500).send('Error running scrape');
+  }
+}
+
+module.exports = { scrapeLeft, scrapeRight, scrapeCenter, scrapeAll };
