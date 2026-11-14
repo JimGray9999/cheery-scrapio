@@ -12,7 +12,6 @@ describe('Scraping routes', () => {
   beforeEach(() => {
     app = createApp();
     jest.clearAllMocks();
-    delete process.env.SCRAPE_SECRET;
   });
 
   describe('POST /scrape', () => {
@@ -42,29 +41,9 @@ describe('Scraping routes', () => {
       expect(res.status).toBe(500);
     });
 
-    test('returns 403 when SCRAPE_SECRET is set and header is missing', async () => {
-      process.env.SCRAPE_SECRET = 'my-secret';
-
-      const res = await request(app).post('/scrape');
-      expect(res.status).toBe(403);
-      expect(res.body.error).toBe('Forbidden');
-    });
-
-    test('allows request when SCRAPE_SECRET is set and header matches', async () => {
-      process.env.SCRAPE_SECRET = 'my-secret';
-      scraperService.scrapeLeftArticles = jest
-        .fn()
-        .mockResolvedValue({ newCount: 1, duplicateCount: 0 });
-      scraperService.scrapeRightArticles = jest
-        .fn()
-        .mockResolvedValue({ newCount: 1, duplicateCount: 0 });
-      scraperService.scrapeCenterArticles = jest
-        .fn()
-        .mockResolvedValue({ newCount: 1, duplicateCount: 0 });
-
-      const res = await request(app).post('/scrape').set('x-scrape-token', 'my-secret');
-      expect(res.status).toBe(302);
-      expect(res.headers.location).toBe('/all');
+    test('GET /scrape/left is no longer routed', async () => {
+      const res = await request(app).get('/scrape/left');
+      expect(res.status).toBe(404);
     });
   });
 });

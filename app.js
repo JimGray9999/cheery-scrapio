@@ -1,6 +1,7 @@
 const express = require('express');
 const { engine } = require('express-handlebars');
 const helmet = require('helmet');
+const logger = require('./utils/logger');
 
 const articleRoutes = require('./routes/articles');
 const scrapingRoutes = require('./routes/scraping');
@@ -27,6 +28,7 @@ function createApp() {
 
   // eslint-disable-next-line no-unused-vars
   app.use((err, req, res, next) => {
+    logger.error('Unhandled error:', err);
     res.status(500).json({ error: 'Internal server error' });
   });
 

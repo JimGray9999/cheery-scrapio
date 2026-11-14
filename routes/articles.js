@@ -26,7 +26,7 @@ const noteController = require('../controllers/noteController');
 const noteLimit = rateLimit({
   windowMs: 60 * 1000,
   max: 10,
-  message: 'Too many note submissions — please slow down.',
+  message: { error: 'Too many note submissions — please slow down.' },
   standardHeaders: true,
   legacyHeaders: false,
   skip: () => process.env.NODE_ENV === 'test',

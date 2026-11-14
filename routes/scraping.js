@@ -12,19 +12,6 @@ const scrapeLimit = rateLimit({
   skip: () => process.env.NODE_ENV === 'test',
 });
 
-function requireScrapeToken(req, res, next) {
-  const secret = process.env.SCRAPE_SECRET;
-  if (!secret) return next();
-  if (req.get('x-scrape-token') === secret) return next();
-  return res.status(403).json({ error: 'Forbidden' });
-}
-
-// Primary entry point: POST runs the full left→right→center chain
-router.post('/scrape', scrapeLimit, requireScrapeToken, scraperController.scrapeAll);
-
-// Internal GET redirect chain (kept for backward-compat; not exposed in UI)
-router.get('/scrape/left', scraperController.scrapeLeft);
-router.get('/scrape/right', scraperController.scrapeRight);
-router.get('/scrape/news/center', scraperController.scrapeCenter);
+router.post('/scrape', scrapeLimit, scraperController.scrapeAll);
 
 module.exports = router;
