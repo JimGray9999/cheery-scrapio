@@ -105,4 +105,71 @@ describe('Article routes', () => {
       expect(Note.findByIdAndDelete).toHaveBeenCalledWith(mockNote._id);
     });
   });
+
+  describe('GET /api/articles', () => {
+    const findChain = results =>
+      jest.fn().mockReturnValue({
+        populate: jest.fn().mockReturnThis(),
+        sort: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue(results),
+      });
+
+    test('returns 400 for missing or invalid filter', async () => {
+      const res = await request(app).get('/api/articles');
+      expect(res.status).toBe(400);
+    });
+
+    test('returns first page of left articles', async () => {
+      const mockArticles = [
+        { _id: 'a1', title: 'T', link: 'http://x.com', source: 'S', left: true, right: false },
+      ];
+      Article.find = findChain(mockArticles);
+
+      const res = await request(app).get('/api/articles?filter=left');
+      expect(res.status).toBe(200);
+      expect(res.body.articles).toHaveLength(1);
+      expect(res.body.nextCursor).toBeNull();
+    });
+
+    test('sets nextCursor when more articles exist', async () => {
+      const makeArticle = id => ({
+        _id: id,
+        title: 'T',
+        link: 'http://x.com',
+        source: 'S',
+        left: true,
+        right: false,
+      });
+      const mockArticles = Array.from({ length: 21 }, (_, i) => makeArticle(`id${i}`));
+      mockArticles[19]._id = { toString: () => 'cursor-id' };
+      Article.find = findChain(mockArticles);
+
+      const res = await request(app).get('/api/articles?filter=left');
+      expect(res.status).toBe(200);
+      expect(res.body.articles).toHaveLength(20);
+      expect(res.body.nextCursor).toBe('cursor-id');
+    });
+
+    test('passes before cursor as _id $lt query', async () => {
+      Article.find = findChain([]);
+
+      await request(app).get('/api/articles?filter=center&before=abc123');
+      expect(Article.find).toHaveBeenCalledWith({
+        left: false,
+        right: false,
+        _id: { $lt: 'abc123' },
+      });
+    });
+
+    test('returns 500 on DB error', async () => {
+      Article.find = jest.fn().mockReturnValue({
+        populate: jest.fn().mockReturnThis(),
+        sort: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockRejectedValue(new Error('DB error')),
+      });
+
+      const res = await request(app).get('/api/articles?filter=right');
+      expect(res.status).toBe(500);
+    });
+  });
 });

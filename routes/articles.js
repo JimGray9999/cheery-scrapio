@@ -60,6 +60,9 @@ router.get('/all', articleController.getAllArticles);
 router.get('/left', articleController.getLeftArticles);
 router.get('/right', articleController.getRightArticles);
 
+// Paginated JSON API — GET /api/articles?filter=left|center|right&before=<_id>
+router.get('/api/articles', articleController.getArticlesPage);
+
 // Article + note routes
 router.get('/articles/:id', articleController.getArticleById);
 router.post('/articles/:id', noteLimit, validateNote, noteController.createNote);

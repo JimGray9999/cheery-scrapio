@@ -5,6 +5,8 @@ services:
     restart: unless-stopped
     environment:
       MONGO_INITDB_DATABASE: cheery-scrapio
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:?Set MONGO_PASSWORD in .env}
     ports:
       - '27017:27017'
     volumes:
@@ -12,7 +14,13 @@ services:
     networks:
       - cheery-network
     healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      test: >-
+        mongosh
+        --username $$MONGO_INITDB_ROOT_USERNAME
+        --password $$MONGO_INITDB_ROOT_PASSWORD
+        --authenticationDatabase admin
+        --eval 'db.runCommand("ping").ok'
+        --quiet
       interval: 10s
       timeout: 5s
       retries: 5
@@ -29,7 +37,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5000
-      MONGODB_URI: mongodb://mongodb:27017/cheery-scrapio
+      MONGODB_URI: mongodb://${MONGO_USERNAME:-admin}:${MONGO_PASSWORD}@mongodb:27017/cheery-scrapio?authSource=admin
       SCRAPE_URL_LEFT: https://www.democraticunderground.com/?com=forum&id=1014
       SCRAPE_URL_RIGHT: http://www.freerepublic.com/tag/breaking-news/index?tab=articles
       SCRAPE_URL_CENTER: http://www.bbc.com/news/world/us_and_canada

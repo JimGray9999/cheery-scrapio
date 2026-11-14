@@ -8,68 +8,13 @@
     </div>
     <div class="col-articles">
 
-      {{#each article}}
-        {{#if left}}
-          <div class="article-card" data-id="{{_id}}">
-            <p class="card-source">{{source}}</p>
-            <h3 class="card-title">
-              <a href="{{link}}" target="_blank" rel="noopener noreferrer">{{title}}</a>
-            </h3>
-            {{#if time}}<p class="card-meta">{{time}}</p>{{/if}}
-            <div class="card-footer">
-              {{#if note}}<span class="card-note-badge">&#10022; Note saved</span>{{/if}}
-              <button class="btn-comment" type="button" data-id="{{_id}}">Add note</button>
-            </div>
-          </div>
-
-          <dialog id="dialog-{{_id}}" class="comment-dialog" aria-labelledby="dialog-title-{{_id}}">
-            <div class="dialog-header">
-              <h4 id="dialog-title-{{_id}}">Add Note</h4>
-              <button
-                class="dialog-close"
-                type="button"
-                data-id="{{_id}}"
-                aria-label="Close"
-              >&#x2715;</button>
-            </div>
-            <div class="dialog-article">
-              <span class="dialog-source">{{source}}</span>
-              <p class="dialog-title">{{title}}</p>
-            </div>
-            <form class="dialog-form" data-id="{{_id}}">
-              <p role="alert" class="dialog-error"></p>
-              <div class="form-field">
-                <label for="note-header-{{_id}}">Title</label>
-                <input
-                  id="note-header-{{_id}}"
-                  type="text"
-                  name="header"
-                  placeholder="Give your note a title&hellip;"
-                  required
-                  minlength="3"
-                  maxlength="100"
-                />
-              </div>
-              <div class="form-field">
-                <label for="note-text-{{_id}}">Comment</label>
-                <textarea
-                  id="note-text-{{_id}}"
-                  name="text"
-                  rows="4"
-                  placeholder="Write your note here&hellip;"
-                  required
-                  minlength="10"
-                  maxlength="1000"
-                ></textarea>
-              </div>
-              <div class="dialog-actions">
-                <button type="button" class="btn-cancel" data-id="{{_id}}">Cancel</button>
-                <button type="submit" class="btn-save">Save Note</button>
-              </div>
-            </form>
-          </dialog>
-        {{/if}}
+      {{#each leftArticles}}
+        {{> articleCard}}
       {{/each}}
+
+      {{#if leftCursor}}
+        <button class="btn-load-more" data-filter="left" data-cursor="{{leftCursor}}">Load more</button>
+      {{/if}}
 
       <div class="empty-state">
         <p>No left articles yet.</p>
@@ -89,74 +34,13 @@
     </div>
     <div class="col-articles">
 
-      {{#each article}}
-        {{#unless left}}
-          {{#unless right}}
-            <div class="article-card" data-id="{{_id}}">
-              <p class="card-source">{{source}}</p>
-              <h3 class="card-title">
-                <a href="{{link}}" target="_blank" rel="noopener noreferrer">{{title}}</a>
-              </h3>
-              {{#if time}}<p class="card-meta">{{time}}</p>{{/if}}
-              <div class="card-footer">
-                {{#if note}}<span class="card-note-badge">&#10022; Note saved</span>{{/if}}
-                <button class="btn-comment" type="button" data-id="{{_id}}">Add note</button>
-              </div>
-            </div>
-
-            <dialog
-              id="dialog-{{_id}}"
-              class="comment-dialog"
-              aria-labelledby="dialog-title-{{_id}}"
-            >
-              <div class="dialog-header">
-                <h4 id="dialog-title-{{_id}}">Add Note</h4>
-                <button
-                  class="dialog-close"
-                  type="button"
-                  data-id="{{_id}}"
-                  aria-label="Close"
-                >&#x2715;</button>
-              </div>
-              <div class="dialog-article">
-                <span class="dialog-source">{{source}}</span>
-                <p class="dialog-title">{{title}}</p>
-              </div>
-              <form class="dialog-form" data-id="{{_id}}">
-                <p role="alert" class="dialog-error"></p>
-                <div class="form-field">
-                  <label for="note-header-{{_id}}">Title</label>
-                  <input
-                    id="note-header-{{_id}}"
-                    type="text"
-                    name="header"
-                    placeholder="Give your note a title&hellip;"
-                    required
-                    minlength="3"
-                    maxlength="100"
-                  />
-                </div>
-                <div class="form-field">
-                  <label for="note-text-{{_id}}">Comment</label>
-                  <textarea
-                    id="note-text-{{_id}}"
-                    name="text"
-                    rows="4"
-                    placeholder="Write your note here&hellip;"
-                    required
-                    minlength="10"
-                    maxlength="1000"
-                  ></textarea>
-                </div>
-                <div class="dialog-actions">
-                  <button type="button" class="btn-cancel" data-id="{{_id}}">Cancel</button>
-                  <button type="submit" class="btn-save">Save Note</button>
-                </div>
-              </form>
-            </dialog>
-          {{/unless}}
-        {{/unless}}
+      {{#each centerArticles}}
+        {{> articleCard}}
       {{/each}}
+
+      {{#if centerCursor}}
+        <button class="btn-load-more" data-filter="center" data-cursor="{{centerCursor}}">Load more</button>
+      {{/if}}
 
       <div class="empty-state">
         <p>No center articles yet.</p>
@@ -176,68 +60,13 @@
     </div>
     <div class="col-articles">
 
-      {{#each article}}
-        {{#if right}}
-          <div class="article-card" data-id="{{_id}}">
-            <p class="card-source">{{source}}</p>
-            <h3 class="card-title">
-              <a href="{{link}}" target="_blank" rel="noopener noreferrer">{{title}}</a>
-            </h3>
-            {{#if time}}<p class="card-meta">{{time}}</p>{{/if}}
-            <div class="card-footer">
-              {{#if note}}<span class="card-note-badge">&#10022; Note saved</span>{{/if}}
-              <button class="btn-comment" type="button" data-id="{{_id}}">Add note</button>
-            </div>
-          </div>
-
-          <dialog id="dialog-{{_id}}" class="comment-dialog" aria-labelledby="dialog-title-{{_id}}">
-            <div class="dialog-header">
-              <h4 id="dialog-title-{{_id}}">Add Note</h4>
-              <button
-                class="dialog-close"
-                type="button"
-                data-id="{{_id}}"
-                aria-label="Close"
-              >&#x2715;</button>
-            </div>
-            <div class="dialog-article">
-              <span class="dialog-source">{{source}}</span>
-              <p class="dialog-title">{{title}}</p>
-            </div>
-            <form class="dialog-form" data-id="{{_id}}">
-              <p role="alert" class="dialog-error"></p>
-              <div class="form-field">
-                <label for="note-header-{{_id}}">Title</label>
-                <input
-                  id="note-header-{{_id}}"
-                  type="text"
-                  name="header"
-                  placeholder="Give your note a title&hellip;"
-                  required
-                  minlength="3"
-                  maxlength="100"
-                />
-              </div>
-              <div class="form-field">
-                <label for="note-text-{{_id}}">Comment</label>
-                <textarea
-                  id="note-text-{{_id}}"
-                  name="text"
-                  rows="4"
-                  placeholder="Write your note here&hellip;"
-                  required
-                  minlength="10"
-                  maxlength="1000"
-                ></textarea>
-              </div>
-              <div class="dialog-actions">
-                <button type="button" class="btn-cancel" data-id="{{_id}}">Cancel</button>
-                <button type="submit" class="btn-save">Save Note</button>
-              </div>
-            </form>
-          </dialog>
-        {{/if}}
+      {{#each rightArticles}}
+        {{> articleCard}}
       {{/each}}
+
+      {{#if rightCursor}}
+        <button class="btn-load-more" data-filter="right" data-cursor="{{rightCursor}}">Load more</button>
+      {{/if}}
 
       <div class="empty-state">
         <p>No right articles yet.</p>

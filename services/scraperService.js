@@ -12,12 +12,18 @@ const Article = require('../models/Article');
 const logger = require('../utils/logger');
 const config = require('../config/config');
 
-// Shared HTTP client with timeout and browser-like user-agent to avoid blocks
+// Shared HTTP client that looks like a real browser to avoid bot-detection blocks
 const httpClient = axios.create({
-  timeout: 10000,
+  timeout: 15000,
   headers: {
     'User-Agent':
-      'Mozilla/5.0 (compatible; cheery-scrapio/1.0; +https://github.com/JimGray9999/cheery-scrapio)',
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+    Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Cache-Control': 'no-cache',
+    Pragma: 'no-cache',
+    'Upgrade-Insecure-Requests': '1',
   },
   maxRedirects: 5,
 });
@@ -63,7 +69,7 @@ async function scrapeLeftArticles() {
   let anchors = $("a[href*='?com=view_post'][href*='forum=1014']");
 
   if (anchors.length === 0) {
-    anchors = $('td.subject a, td.title a');
+    anchors = $('td.subject a, td.title a, .subject a, .title a');
   }
 
   if (anchors.length === 0) {
@@ -72,8 +78,18 @@ async function scrapeLeftArticles() {
       return (
         href.includes('?com=view_post') ||
         href.includes('?com=discuss') ||
-        href.includes('?com=thread')
+        href.includes('?com=thread') ||
+        href.includes('/discuss/')
       );
+    });
+  }
+
+  if (anchors.length === 0) {
+    // Last resort: any link that looks like a forum post
+    anchors = $('a').filter(function (i, el) {
+      const title = $(el).text().trim();
+      const href = $(el).attr('href') || '';
+      return title.length > 15 && href.includes('democraticunderground.com');
     });
   }
 
@@ -121,22 +137,38 @@ async function scrapeRightArticles() {
   const linkStart = 'http://www.freerepublic.com/';
   const articles = [];
 
-  $('li.article').each(function (i, element) {
-    const href = $(element).find('h3').children().attr('href');
-    const title = $(element).find('h3').children().text().trim();
-    const time = $(element).find('.date').text().trim();
+  // Try structured list items first
+  $('li.article, li.news-item, .article-list li').each(function (i, element) {
+    const anchor = $(element).find('h3 a, h2 a, a.title, a').first();
+    const href = anchor.attr('href');
+    const title = anchor.text().trim();
+    const time = $(element).find('.date, .time, time').text().trim();
 
     if (!title || !href) return;
 
-    articles.push({
-      link: linkStart + href,
-      title,
-      time,
-      left: false,
-      right: true,
-      source: 'Free Republic',
-    });
+    const link = href.startsWith('http') ? href : linkStart + href;
+    articles.push({ link, title, time, left: false, right: true, source: 'Free Republic' });
   });
+
+  // Fallback: any anchor that looks like a FR article link
+  if (articles.length === 0) {
+    $('a')
+      .filter(function (i, el) {
+        const href = $(el).attr('href') || '';
+        const title = $(el).text().trim();
+        return (
+          title.length > 20 &&
+          (href.includes('/focus/') || href.includes('/news/')) &&
+          !href.includes('javascript')
+        );
+      })
+      .each(function (i, el) {
+        const href = $(el).attr('href');
+        const title = $(el).text().trim();
+        const link = href.startsWith('http') ? href : linkStart + href;
+        articles.push({ link, title, time: '', left: false, right: true, source: 'Free Republic' });
+      });
+  }
 
   const counts = await upsertArticles(articles);
   logger.info(
@@ -160,20 +192,37 @@ async function scrapeCenterArticles() {
   const articles = [];
   const seen = new Set();
 
-  $('a[data-testid="internal-link"]').each(function (i, element) {
-    const href = $(element).attr('href');
-    const title =
-      $(element).find('h2, h3, [data-testid="card-headline"]').text().trim() ||
-      $(element).text().trim();
+  const bbcSelectors = [
+    'a[data-testid="internal-link"]',
+    'a[data-testid="card-headline"]',
+    '.gs-c-promo-heading a',
+    '.nw-c-promo-summary a',
+    'a[href*="/news/articles/"]',
+    'a[href*="/news/world"]',
+    'a[href*="/news/uk"]',
+    'a[href*="/news/us-canada"]',
+  ];
 
-    if (!href || !title || title.length < 10) return;
+  for (const selector of bbcSelectors) {
+    $(selector).each(function (i, element) {
+      const href = $(element).attr('href');
+      const title =
+        $(element)
+          .find('h2, h3, [data-testid="card-headline"], .gs-c-promo-heading')
+          .text()
+          .trim() || $(element).text().trim();
 
-    const link = href.startsWith('http') ? href : linkStart + href;
-    if (seen.has(link)) return;
-    seen.add(link);
+      if (!href || !title || title.length < 10) return;
+      if (href.includes('#') && !href.includes('/news/')) return;
 
-    articles.push({ title, link, time: '', left: false, right: false, source: 'BBC' });
-  });
+      const link = href.startsWith('http') ? href : linkStart + href;
+      if (seen.has(link)) return;
+      seen.add(link);
+
+      articles.push({ title, link, time: '', left: false, right: false, source: 'BBC' });
+    });
+    if (articles.length > 5) break; // stop once a selector yields results
+  }
 
   logger.info(`BBC: found ${articles.length} candidate articles`);
 
