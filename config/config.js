@@ -28,8 +28,7 @@ const config = {
 
   // Scraping URLs
   scraping: {
-    leftUrl:
-      process.env.SCRAPE_URL_LEFT || 'https://www.democraticunderground.com/?com=forum&id=1014',
+    guardianApiKey: process.env.GUARDIAN_API_KEY || 'test',
     rightUrl:
       process.env.SCRAPE_URL_RIGHT ||
       'http://www.freerepublic.com/tag/breaking-news/index?tab=articles',
