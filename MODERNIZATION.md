@@ -20,10 +20,10 @@ Track ongoing improvements to the codebase. Check off items as they land on `mai
 - [x] No global error middleware — added `(err, req, res, next)` handler in `server.js`
 - [x] No mongoose connection timeout — added `serverSelectionTimeoutMS: 5000` to `mongoose.connect`
 - [x] Routes/config/logger in `collectCoverageFrom` but have zero tests — excluded from coverage; thresholds raised to reflect only controllers/services
-- [ ] `/debug/counts` is unauthenticated — gate behind a secret header or remove before any real deploy
-- [ ] No rate limiting — add `express-rate-limit` to scrape endpoints and `POST /articles/:id`
-- [ ] Scrape endpoints are unauthenticated GETs — add a secret-header check or convert to POST
-- [ ] No integration/route-level tests — add a supertest suite covering `/all`, `/articles/:id`, and `articleController` (currently 0% covered)
+- [x] `/debug/counts` — endpoint not present in codebase (N/A)
+- [x] No rate limiting — added `express-rate-limit` to `POST /scrape` (1/min) and `POST /articles/:id` (10/min); skipped in `NODE_ENV=test`
+- [x] Scrape endpoints are unauthenticated GETs — consolidated into `POST /scrape`; optional `SCRAPE_SECRET` env var gates it via `x-scrape-token` header
+- [x] No integration/route-level tests — added supertest suites in `__tests__/routes/` covering `/health`, `/articles/:id`, `POST /articles/:id`, `POST /scrape` (31 tests total, all coverage thresholds pass)
 
 ---
 
