@@ -117,10 +117,12 @@ document.addEventListener('submit', async e => {
 
 // ── :has() fallback for empty-state ─────────────────────
 // Modern browsers handle this in CSS; this covers anything that doesn't.
+// Guard on .col-articles so this is a no-op on pages without columns.
 
 (function emptyStateFallback() {
-  if (CSS.supports('selector(:has(.x))')) return;
-  document.querySelectorAll('.col-articles').forEach(col => {
+  const cols = document.querySelectorAll('.col-articles');
+  if (!cols.length || CSS.supports('selector(:has(.x))')) return;
+  cols.forEach(col => {
     if (!col.querySelector('.article-card')) {
       const es = col.querySelector('.empty-state');
       if (es) es.style.display = 'block';
