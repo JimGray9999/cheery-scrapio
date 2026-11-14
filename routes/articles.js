@@ -17,10 +17,20 @@
  */
 
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const articleController = require('../controllers/articleController');
 const noteController = require('../controllers/noteController');
+
+const noteLimit = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  message: 'Too many note submissions — please slow down.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === 'test',
+});
 
 // Validation middleware for note creation
 const validateNote = [
@@ -52,7 +62,7 @@ router.get('/right', articleController.getRightArticles);
 
 // Article + note routes
 router.get('/articles/:id', articleController.getArticleById);
-router.post('/articles/:id', validateNote, noteController.createNote);
+router.post('/articles/:id', noteLimit, validateNote, noteController.createNote);
 router.delete('/articles/:id/note', noteController.deleteNote);
 
 module.exports = router;
