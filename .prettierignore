@@ -4,4 +4,4 @@ logs/
 package-lock.json
 *.log
 .env
-views/layouts/main.handlebars
+views/

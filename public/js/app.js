@@ -106,6 +106,97 @@ document.addEventListener('submit', async e => {
   }
 });
 
+// ── Load more (cursor-based pagination) ──────────────────
+
+function escapeHtml(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function safeHref(url) {
+  return /^https?:\/\//i.test(url) ? url : '#';
+}
+
+function buildCard(a) {
+  const id = a._id;
+  const time = a.time ? `<p class="card-meta">${escapeHtml(a.time)}</p>` : '';
+  const badge = a.note ? '<span class="card-note-badge">&#10022; Note saved</span>' : '';
+  return `<div class="article-card" data-id="${id}">
+  <p class="card-source">${escapeHtml(a.source)}</p>
+  <h3 class="card-title">
+    <a href="${escapeHtml(safeHref(a.link))}" target="_blank" rel="noopener noreferrer">${escapeHtml(a.title)}</a>
+  </h3>
+  ${time}
+  <div class="card-footer">
+    ${badge}
+    <button class="btn-comment" type="button" data-id="${id}">Add note</button>
+  </div>
+</div>
+<dialog id="dialog-${id}" class="comment-dialog" aria-labelledby="dialog-title-${id}">
+  <div class="dialog-header">
+    <h4 id="dialog-title-${id}">Add Note</h4>
+    <button class="dialog-close" type="button" data-id="${id}" aria-label="Close">&#x2715;</button>
+  </div>
+  <div class="dialog-article">
+    <span class="dialog-source">${escapeHtml(a.source)}</span>
+    <p class="dialog-title">${escapeHtml(a.title)}</p>
+  </div>
+  <form class="dialog-form" data-id="${id}">
+    <p role="alert" class="dialog-error"></p>
+    <div class="form-field">
+      <label for="note-header-${id}">Title</label>
+      <input id="note-header-${id}" type="text" name="header" placeholder="Give your note a title…" required minlength="3" maxlength="100" />
+    </div>
+    <div class="form-field">
+      <label for="note-text-${id}">Comment</label>
+      <textarea id="note-text-${id}" name="text" rows="4" placeholder="Write your note here…" required minlength="10" maxlength="1000"></textarea>
+    </div>
+    <div class="dialog-actions">
+      <button type="button" class="btn-cancel" data-id="${id}">Cancel</button>
+      <button type="submit" class="btn-save">Save Note</button>
+    </div>
+  </form>
+</dialog>`;
+}
+
+document.addEventListener('click', async e => {
+  const btn = e.target.closest('.btn-load-more');
+  if (!btn) return;
+
+  const filter = btn.dataset.filter;
+  const cursor = btn.dataset.cursor;
+  btn.disabled = true;
+  btn.textContent = 'Loading…';
+
+  try {
+    const res = await fetch(
+      `/api/articles?filter=${encodeURIComponent(filter)}&before=${encodeURIComponent(cursor)}`
+    );
+    if (!res.ok) throw new Error('Server error');
+    const { articles, nextCursor } = await res.json();
+
+    const fragment = document
+      .createRange()
+      .createContextualFragment(articles.map(buildCard).join('\n'));
+    btn.before(fragment);
+
+    if (nextCursor) {
+      btn.dataset.cursor = nextCursor;
+      btn.disabled = false;
+      btn.textContent = 'Load more';
+    } else {
+      btn.remove();
+    }
+  } catch {
+    btn.disabled = false;
+    btn.textContent = 'Load more';
+    showToast('Error loading articles.', 'error');
+  }
+});
+
 // ── Active nav link ──────────────────────────────────────
 
 (function markActiveNav() {

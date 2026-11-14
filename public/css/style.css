@@ -473,6 +473,34 @@ main {
   text-underline-offset: 2px;
 }
 
+/* ── Load more ───────────────────────────────────────────── */
+.btn-load-more {
+  display: block;
+  width: 100%;
+  padding: 9px 0;
+  margin: 6px 0;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--fg-2);
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: var(--font-body);
+  cursor: pointer;
+  text-align: center;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
+}
+.btn-load-more:hover:not(:disabled) {
+  border-color: var(--fg-3);
+  color: var(--fg);
+}
+.btn-load-more:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 /* ── Comment dialog ──────────────────────────────────────── */
 .comment-dialog {
   background: var(--surface);
