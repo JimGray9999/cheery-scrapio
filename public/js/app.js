@@ -32,10 +32,10 @@ document.addEventListener('click', e => {
   if (btn) openDialog(btn.dataset.id);
 });
 
-// Close via ✕ button or Cancel
+// Close via ✕ button or Cancel (note dialog only — tag dialog has its own handler)
 document.addEventListener('click', e => {
   const btn = e.target.closest('.dialog-close, .btn-cancel');
-  if (btn) closeDialog(btn.dataset.id);
+  if (btn && !btn.classList.contains('tag-dialog-close')) closeDialog(btn.dataset.id);
 });
 
 // Close when clicking the backdrop (outside the dialog box)
