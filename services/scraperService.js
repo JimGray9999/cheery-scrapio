@@ -179,7 +179,20 @@ async function scrapeCenterArticles() {
       if (seen.has(link)) return;
       seen.add(link);
 
-      articles.push({ title, link, time: '', left: false, right: false, source: 'BBC' });
+      const card = $(element).closest('[data-testid="card"], article, .gs-c-promo, li');
+      const timeEl = card.find('time[datetime]').first();
+      const datetime = timeEl.attr('datetime') || '';
+      const time = datetime
+        ? new Date(datetime).toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          })
+        : '';
+
+      articles.push({ title, link, time, left: false, right: false, source: 'BBC' });
     });
     if (articles.length > 5) break; // stop once a selector yields results
   }
