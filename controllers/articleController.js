@@ -25,7 +25,8 @@ async function getAllArticles(req, res) {
       Article.find(q)
         .populate('note')
         .sort({ _id: -1 })
-        .limit(PAGE_SIZE + 1);
+        .limit(PAGE_SIZE + 1)
+        .lean();
 
     const [left, center, right] = await Promise.all([
       chain({ left: true }),
@@ -59,7 +60,8 @@ async function getLeftArticles(req, res) {
     const left = await Article.find({ left: true })
       .populate('note')
       .sort({ _id: -1 })
-      .limit(PAGE_SIZE + 1);
+      .limit(PAGE_SIZE + 1)
+      .lean();
     const { articles: leftArticles, cursor: leftCursor } = takePage(left);
     res.render('index', {
       leftArticles,
@@ -83,7 +85,8 @@ async function getRightArticles(req, res) {
     const right = await Article.find({ right: true })
       .populate('note')
       .sort({ _id: -1 })
-      .limit(PAGE_SIZE + 1);
+      .limit(PAGE_SIZE + 1)
+      .lean();
     const { articles: rightArticles, cursor: rightCursor } = takePage(right);
     res.render('index', {
       leftArticles: [],
