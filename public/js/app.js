@@ -197,6 +197,95 @@ document.addEventListener('click', async e => {
   }
 });
 
+// ── Search ───────────────────────────────────────────────
+
+(function initSearch() {
+  const input = document.getElementById('search-input');
+  const resultsEl = document.getElementById('search-results');
+  const mainEl = document.getElementById('main-content');
+  if (!input || !resultsEl || !mainEl) return;
+
+  let debounceTimer;
+
+  function clearSearch() {
+    resultsEl.innerHTML = '';
+    resultsEl.classList.remove('active');
+    mainEl.style.display = '';
+  }
+
+  function groupByBias(articles) {
+    const left = [],
+      center = [],
+      right = [];
+    articles.forEach(a => {
+      if (a.left) left.push(a);
+      else if (a.right) right.push(a);
+      else center.push(a);
+    });
+    return { left, center, right };
+  }
+
+  function renderSearchResults(articles, query) {
+    if (!articles.length) {
+      resultsEl.innerHTML = `<p class="search-results-header">No results for &ldquo;${escapeHtml(query)}&rdquo;</p>`;
+      resultsEl.classList.add('active');
+      mainEl.style.display = 'none';
+      return;
+    }
+
+    const { left, center, right } = groupByBias(articles);
+
+    const col = (label, items) => {
+      if (!items.length)
+        return `<div class="news-col"><h2 class="col-heading">${label}</h2><p class="empty-state">No results</p></div>`;
+      return `<div class="news-col"><h2 class="col-heading">${label}</h2><div class="col-articles">${items.map(buildCard).join('\n')}</div></div>`;
+    };
+
+    resultsEl.innerHTML = `
+      <p class="search-results-header">${articles.length} result${articles.length !== 1 ? 's' : ''} for &ldquo;${escapeHtml(query)}&rdquo;</p>
+      <div class="search-cols news-grid">
+        ${col('Left', left)}
+        ${col('Center', center)}
+        ${col('Right', right)}
+      </div>`;
+    resultsEl.classList.add('active');
+    mainEl.style.display = 'none';
+  }
+
+  async function doSearch(q) {
+    if (q.length < 2) {
+      clearSearch();
+      return;
+    }
+    try {
+      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+      if (!res.ok) throw new Error('Search failed');
+      const { articles } = await res.json();
+      renderSearchResults(articles, q);
+    } catch {
+      showToast('Search error — please try again.', 'error');
+    }
+  }
+
+  input.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    const q = input.value.trim();
+    if (!q) {
+      clearSearch();
+      return;
+    }
+    debounceTimer = setTimeout(() => doSearch(q), 300);
+  });
+
+  // Clear search on Escape
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      input.value = '';
+      clearSearch();
+    }
+  });
+})();
+
 // ── Active nav link ──────────────────────────────────────
 
 (function markActiveNav() {

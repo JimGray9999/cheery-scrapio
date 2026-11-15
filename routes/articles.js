@@ -63,6 +63,9 @@ router.get('/right', articleController.getRightArticles);
 // Paginated JSON API — GET /api/articles?filter=left|center|right&before=<_id>
 router.get('/api/articles', articleController.getArticlesPage);
 
+// Full-text search — GET /api/search?q=<query>&filter=left|center|right
+router.get('/api/search', articleController.searchArticles);
+
 // Article + note routes
 router.get('/articles/:id', articleController.getArticleById);
 router.post('/articles/:id', noteLimit, validateNote, noteController.createNote);

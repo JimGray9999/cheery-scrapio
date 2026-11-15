@@ -28,11 +28,26 @@
           </nav>
         </div>
         <div class="masthead-rule"></div>
-        <p class="masthead-tagline">Left &middot; Center &middot; Right &mdash; All in one place</p>
+        <div class="masthead-bottom">
+          <p class="masthead-tagline">Left &middot; Center &middot; Right &mdash; All in one place</p>
+          <form class="search-form" role="search" aria-label="Search articles">
+            <input
+              id="search-input"
+              type="search"
+              class="search-input"
+              placeholder="Search articles…"
+              aria-label="Search articles"
+              autocomplete="off"
+              maxlength="200"
+            />
+          </form>
+        </div>
       </div>
     </header>
 
-    <main>
+    <div id="search-results" role="region" aria-label="Search results"></div>
+
+    <main id="main-content">
       {{{body}}}
     </main>
 
