@@ -32,6 +32,10 @@ const ArticleSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: 'Note',
     },
+    tags: {
+      type: [String],
+      default: [],
+    },
   },
   { timestamps: true }
 );

@@ -120,18 +120,27 @@ function safeHref(url) {
   return /^https?:\/\//i.test(url) ? url : '#';
 }
 
+function buildTagPills(tags) {
+  if (!tags || !tags.length) return '';
+  return `<div class="card-tags">${tags.map(t => `<span class="tag-pill">${escapeHtml(t)}</span>`).join('')}</div>`;
+}
+
 function buildCard(a) {
   const id = a._id;
+  const tags = Array.isArray(a.tags) ? a.tags : [];
+  const tagsJson = escapeHtml(JSON.stringify(tags));
   const time = a.time ? `<p class="card-meta">${escapeHtml(a.time)}</p>` : '';
   const badge = a.note ? '<span class="card-note-badge">&#10022; Note saved</span>' : '';
-  return `<div class="article-card" data-id="${id}">
+  return `<div class="article-card" data-id="${id}" data-tags="${tagsJson}">
   <p class="card-source">${escapeHtml(a.source)}</p>
   <h3 class="card-title">
     <a href="${escapeHtml(safeHref(a.link))}" target="_blank" rel="noopener noreferrer">${escapeHtml(a.title)}</a>
   </h3>
   ${time}
+  ${buildTagPills(tags)}
   <div class="card-footer">
     ${badge}
+    <button class="btn-tag" type="button" data-id="${id}">Tag</button>
     <button class="btn-comment" type="button" data-id="${id}">Add note</button>
   </div>
 </div>
@@ -159,6 +168,26 @@ function buildCard(a) {
       <button type="submit" class="btn-save">Save Note</button>
     </div>
   </form>
+</dialog>
+<dialog id="tag-dialog-${id}" class="comment-dialog tag-dialog" aria-labelledby="tag-dialog-title-${id}">
+  <div class="dialog-header">
+    <h4 id="tag-dialog-title-${id}">Tags</h4>
+    <button class="tag-dialog-close" type="button" data-id="${id}" aria-label="Close">&#x2715;</button>
+  </div>
+  <div class="dialog-article">
+    <span class="dialog-source">${escapeHtml(a.source)}</span>
+    <p class="dialog-title">${escapeHtml(a.title)}</p>
+  </div>
+  <div class="tag-current" id="tag-current-${id}"></div>
+  <div class="tag-input-row">
+    <input id="tag-input-${id}" class="tag-input" type="text" placeholder="Add a tag…" maxlength="50" list="tag-datalist" autocomplete="off" />
+    <button type="button" class="btn-save tag-add-btn" data-id="${id}">Add</button>
+  </div>
+  <div class="tag-all-list" id="tag-suggestions-${id}"></div>
+  <div class="dialog-actions" style="margin-top:14px">
+    <button type="button" class="btn-cancel tag-dialog-close" data-id="${id}">Cancel</button>
+    <button type="button" class="btn-save tag-save-btn" data-id="${id}">Save Tags</button>
+  </div>
 </dialog>`;
 }
 
@@ -194,6 +223,206 @@ document.addEventListener('click', async e => {
     btn.disabled = false;
     btn.textContent = 'Load more';
     showToast('Error loading articles.', 'error');
+  }
+});
+
+// ── Tags ─────────────────────────────────────────────────
+
+let allTags = [];
+
+async function loadAllTags() {
+  try {
+    const res = await fetch('/api/tags');
+    if (!res.ok) return;
+    const { tags } = await res.json();
+    allTags = tags;
+    // populate shared datalist
+    const dl = document.getElementById('tag-datalist');
+    if (dl) {
+      dl.innerHTML = tags.map(t => `<option value="${escapeHtml(t)}">`).join('');
+    }
+  } catch {
+    /* non-fatal */
+  }
+}
+
+loadAllTags();
+
+function openTagDialog(id) {
+  const dialog = document.getElementById('tag-dialog-' + id);
+  if (!dialog) return;
+
+  const card = document.querySelector(`.article-card[data-id="${id}"]`);
+  let currentTags = [];
+  try {
+    currentTags = JSON.parse(card?.dataset.tags || '[]');
+  } catch {
+    currentTags = [];
+  }
+
+  renderTagCurrent(id, currentTags);
+  renderTagSuggestions(id, currentTags);
+
+  dialog.showModal();
+}
+
+function renderTagCurrent(id, tags) {
+  const el = document.getElementById('tag-current-' + id);
+  if (!el) return;
+  el.innerHTML = tags.length
+    ? tags
+        .map(
+          t =>
+            `<span class="tag-pill-edit">${escapeHtml(t)}<button class="tag-remove" data-tag="${escapeHtml(t)}" data-id="${id}" aria-label="Remove ${escapeHtml(t)}">&#x2715;</button></span>`
+        )
+        .join('')
+    : '<span style="font-size:0.75rem;color:var(--fg-2)">No tags yet</span>';
+}
+
+function renderTagSuggestions(id, currentTags) {
+  const el = document.getElementById('tag-suggestions-' + id);
+  if (!el) return;
+  const available = allTags.filter(t => !currentTags.includes(t));
+  if (!available.length) {
+    el.innerHTML = '';
+    return;
+  }
+  el.innerHTML =
+    '<span>Add existing: </span>' +
+    available
+      .map(
+        t =>
+          `<button class="tag-suggestion" data-tag="${escapeHtml(t)}" data-id="${id}">${escapeHtml(t)}</button>`
+      )
+      .join('');
+}
+
+function getDialogTags(id) {
+  const el = document.getElementById('tag-current-' + id);
+  if (!el) return [];
+  return Array.from(el.querySelectorAll('.tag-pill-edit'))
+    .map(pill => pill.querySelector('.tag-remove')?.dataset.tag || '')
+    .filter(Boolean);
+}
+
+// Open tag dialog
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.btn-tag');
+  if (btn) openTagDialog(btn.dataset.id);
+});
+
+// Close tag dialog
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.tag-dialog-close');
+  if (btn) {
+    const dialog = document.getElementById('tag-dialog-' + btn.dataset.id);
+    if (dialog) dialog.close();
+  }
+});
+
+// Remove tag pill
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.tag-remove');
+  if (!btn) return;
+  const id = btn.dataset.id;
+  const tags = getDialogTags(id).filter(t => t !== btn.dataset.tag);
+  renderTagCurrent(id, tags);
+  renderTagSuggestions(id, tags);
+});
+
+// Add tag from suggestion chips
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.tag-suggestion');
+  if (!btn) return;
+  const id = btn.dataset.id;
+  const tag = btn.dataset.tag;
+  const tags = getDialogTags(id);
+  if (!tags.includes(tag)) {
+    renderTagCurrent(id, [...tags, tag]);
+    renderTagSuggestions(id, [...tags, tag]);
+  }
+});
+
+// Add tag from input (Enter or Add button)
+function addTagFromInput(id) {
+  const input = document.getElementById('tag-input-' + id);
+  if (!input) return;
+  const tag = input.value.trim().toLowerCase();
+  if (!tag || tag.length > 50) return;
+  const tags = getDialogTags(id);
+  if (!tags.includes(tag)) {
+    renderTagCurrent(id, [...tags, tag]);
+    renderTagSuggestions(id, [...tags, tag]);
+  }
+  input.value = '';
+}
+
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.tag-add-btn');
+  if (btn) addTagFromInput(btn.dataset.id);
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  const input = e.target.closest('.tag-input');
+  if (!input) return;
+  e.preventDefault();
+  const id = input.id.replace('tag-input-', '');
+  addTagFromInput(id);
+});
+
+// Save tags
+document.addEventListener('click', async e => {
+  const btn = e.target.closest('.tag-save-btn');
+  if (!btn) return;
+  const id = btn.dataset.id;
+  const tags = getDialogTags(id);
+
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+
+  try {
+    const res = await fetch('/articles/' + id + '/tags', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tags }),
+    });
+    if (!res.ok) throw new Error('Server error');
+    const { tags: saved } = await res.json();
+
+    // Update card DOM
+    const card = document.querySelector(`.article-card[data-id="${id}"]`);
+    if (card) {
+      card.dataset.tags = JSON.stringify(saved);
+      let tagsEl = card.querySelector('.card-tags');
+      if (saved.length) {
+        const html = `<div class="card-tags">${saved.map(t => `<span class="tag-pill">${escapeHtml(t)}</span>`).join('')}</div>`;
+        if (tagsEl) {
+          tagsEl.outerHTML = html;
+        } else {
+          card.querySelector('.card-footer').insertAdjacentHTML('beforebegin', html);
+        }
+      } else if (tagsEl) {
+        tagsEl.remove();
+      }
+    }
+
+    // Update global tag list
+    saved.forEach(t => {
+      if (!allTags.includes(t)) allTags.push(t);
+    });
+    allTags.sort();
+    const dl = document.getElementById('tag-datalist');
+    if (dl) dl.innerHTML = allTags.map(t => `<option value="${escapeHtml(t)}">`).join('');
+
+    const dialog = document.getElementById('tag-dialog-' + id);
+    if (dialog) dialog.close();
+    showToast('Tags saved!');
+  } catch {
+    showToast('Error saving tags.', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save Tags';
   }
 });
 

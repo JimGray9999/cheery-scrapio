@@ -1,11 +1,17 @@
-<div class="article-card" data-id="{{_id}}">
+<div class="article-card" data-id="{{_id}}" data-tags="{{json tags}}">
   <p class="card-source">{{source}}</p>
   <h3 class="card-title">
     <a href="{{link}}" target="_blank" rel="noopener noreferrer">{{title}}</a>
   </h3>
   {{#if time}}<p class="card-meta">{{time}}</p>{{/if}}
+  {{#if tags.length}}
+  <div class="card-tags">
+    {{#each tags}}<span class="tag-pill">{{this}}</span>{{/each}}
+  </div>
+  {{/if}}
   <div class="card-footer">
     {{#if note}}<span class="card-note-badge">&#10022; Note saved</span>{{/if}}
+    <button class="btn-tag" type="button" data-id="{{_id}}">Tag</button>
     <button class="btn-comment" type="button" data-id="{{_id}}">Add note</button>
   </div>
 </div>
