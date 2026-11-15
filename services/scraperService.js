@@ -179,8 +179,17 @@ async function scrapeCenterArticles() {
       if (seen.has(link)) return;
       seen.add(link);
 
-      const card = $(element).closest('[data-testid="card"], article, .gs-c-promo, li');
-      const timeEl = card.find('time[datetime]').first();
+      // Walk up up to 5 levels to find a time[datetime] sibling or cousin
+      let timeEl = $();
+      let node = $(element);
+      for (let depth = 0; depth < 5 && !timeEl.length; depth++) {
+        node = node.parent();
+        timeEl = node
+          .find(
+            'time[datetime], [data-testid="card-metadata-lastupdated"] time, [data-testid="card-metadata-published"] time'
+          )
+          .first();
+      }
       const datetime = timeEl.attr('datetime') || '';
       const time = datetime
         ? new Date(datetime).toLocaleString('en-US', {
@@ -197,7 +206,8 @@ async function scrapeCenterArticles() {
     if (articles.length > 5) break; // stop once a selector yields results
   }
 
-  logger.info(`BBC: found ${articles.length} candidate articles`);
+  const withTime = articles.filter(a => a.time).length;
+  logger.info(`BBC: found ${articles.length} candidate articles, ${withTime} with timestamps`);
 
   const counts = await upsertArticles(articles);
   logger.info(
