@@ -573,7 +573,9 @@ main {
   font-size: 0.6875rem;
   background: none;
   color: var(--fg-2);
-  transition: border-color 0.15s, color 0.15s;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
 }
 
 .tag-suggestion:hover {
