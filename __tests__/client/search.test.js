@@ -53,46 +53,43 @@ describe('client search — out-of-order responses', () => {
   // R1: typing "ab" then "abc" fires two overlapping /api/search requests. If the
   // older "ab" response arrives after the newer "abc" response, the UI must still
   // reflect "abc" — not get overwritten by the stale, slower response.
-  test.failing(
-    'keeps only the latest query results when an older request resolves last',
-    async () => {
-      const input = document.getElementById('search-input');
-      const resultsEl = document.getElementById('search-results');
+  test('keeps only the latest query results when an older request resolves last', async () => {
+    const input = document.getElementById('search-input');
+    const resultsEl = document.getElementById('search-results');
 
-      input.value = 'ab';
-      input.dispatchEvent(new Event('input', { bubbles: true }));
-      await jest.advanceTimersByTimeAsync(300);
+    input.value = 'ab';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    await jest.advanceTimersByTimeAsync(300);
 
-      input.value = 'abc';
-      input.dispatchEvent(new Event('input', { bubbles: true }));
-      await jest.advanceTimersByTimeAsync(300);
+    input.value = 'abc';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    await jest.advanceTimersByTimeAsync(300);
 
-      expect(searchDeferreds).toHaveLength(2);
+    expect(searchDeferreds).toHaveLength(2);
 
-      // Newer request ("abc") resolves first.
-      searchDeferreds[1].resolve({
-        ok: true,
-        json: async () => ({
-          articles: [
-            { _id: 'b1', source: 'Guardian', title: 'ABC article', left: false, right: false },
-          ],
-        }),
-      });
-      await flush();
+    // Newer request ("abc") resolves first.
+    searchDeferreds[1].resolve({
+      ok: true,
+      json: async () => ({
+        articles: [
+          { _id: 'b1', source: 'Guardian', title: 'ABC article', left: false, right: false },
+        ],
+      }),
+    });
+    await flush();
 
-      // Older request ("ab") resolves last.
-      searchDeferreds[0].resolve({
-        ok: true,
-        json: async () => ({
-          articles: [
-            { _id: 'a1', source: 'Guardian', title: 'AB article', left: false, right: false },
-          ],
-        }),
-      });
-      await flush();
+    // Older request ("ab") resolves last.
+    searchDeferreds[0].resolve({
+      ok: true,
+      json: async () => ({
+        articles: [
+          { _id: 'a1', source: 'Guardian', title: 'AB article', left: false, right: false },
+        ],
+      }),
+    });
+    await flush();
 
-      expect(resultsEl.textContent).toContain('ABC article');
-      expect(resultsEl.textContent).not.toContain('AB article');
-    }
-  );
+    expect(resultsEl.textContent).toContain('ABC article');
+    expect(resultsEl.textContent).not.toContain('AB article');
+  });
 });

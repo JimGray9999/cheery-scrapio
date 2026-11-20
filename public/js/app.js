@@ -228,6 +228,22 @@ document.addEventListener('click', async e => {
 
 // ── Tags ─────────────────────────────────────────────────
 
+// Feed content removed from the DOM while search results are shown, so card and
+// dialog IDs stay unique. Restored when the search is cleared.
+let feedStash = null;
+
+function applyCardTags(id, tags) {
+  [document, feedStash].filter(Boolean).forEach(root => {
+    root.querySelectorAll(`.article-card[data-id="${id}"]`).forEach(card => {
+      card.dataset.tags = JSON.stringify(tags);
+      card.querySelector('.card-tags')?.remove();
+      if (tags.length) {
+        card.querySelector('.card-footer').insertAdjacentHTML('beforebegin', buildTagPills(tags));
+      }
+    });
+  });
+}
+
 let allTags = [];
 
 async function loadAllTags() {
@@ -390,22 +406,7 @@ document.addEventListener('click', async e => {
     if (!res.ok) throw new Error('Server error');
     const { tags: saved } = await res.json();
 
-    // Update card DOM
-    const card = document.querySelector(`.article-card[data-id="${id}"]`);
-    if (card) {
-      card.dataset.tags = JSON.stringify(saved);
-      let tagsEl = card.querySelector('.card-tags');
-      if (saved.length) {
-        const html = `<div class="card-tags">${saved.map(t => `<span class="tag-pill">${escapeHtml(t)}</span>`).join('')}</div>`;
-        if (tagsEl) {
-          tagsEl.outerHTML = html;
-        } else {
-          card.querySelector('.card-footer').insertAdjacentHTML('beforebegin', html);
-        }
-      } else if (tagsEl) {
-        tagsEl.remove();
-      }
-    }
+    applyCardTags(id, saved);
 
     // Update global tag list
     saved.forEach(t => {
@@ -432,14 +433,28 @@ document.addEventListener('click', async e => {
   const input = document.getElementById('search-input');
   const resultsEl = document.getElementById('search-results');
   const mainEl = document.getElementById('main-content');
+  const form = input?.closest('form');
   if (!input || !resultsEl || !mainEl) return;
 
   let debounceTimer;
+  let searchSeq = 0;
 
   function clearSearch() {
     resultsEl.innerHTML = '';
     resultsEl.classList.remove('active');
-    mainEl.style.display = '';
+    if (feedStash) {
+      mainEl.append(feedStash);
+      feedStash = null;
+    }
+  }
+
+  function showResults(html) {
+    if (!feedStash) {
+      feedStash = document.createDocumentFragment();
+      feedStash.append(...mainEl.childNodes);
+    }
+    resultsEl.innerHTML = html;
+    resultsEl.classList.add('active');
   }
 
   function groupByBias(articles) {
@@ -456,9 +471,9 @@ document.addEventListener('click', async e => {
 
   function renderSearchResults(articles, query) {
     if (!articles.length) {
-      resultsEl.innerHTML = `<p class="search-results-header">No results for &ldquo;${escapeHtml(query)}&rdquo;</p>`;
-      resultsEl.classList.add('active');
-      mainEl.style.display = 'none';
+      showResults(
+        `<p class="search-results-header">No results for &ldquo;${escapeHtml(query)}&rdquo;</p>`
+      );
       return;
     }
 
@@ -470,18 +485,17 @@ document.addEventListener('click', async e => {
       return `<div class="news-col"><h2 class="col-heading">${label}</h2><div class="col-articles">${items.map(buildCard).join('\n')}</div></div>`;
     };
 
-    resultsEl.innerHTML = `
+    showResults(`
       <p class="search-results-header">${articles.length} result${articles.length !== 1 ? 's' : ''} for &ldquo;${escapeHtml(query)}&rdquo;</p>
       <div class="search-cols news-grid">
         ${col('Left', left)}
         ${col('Center', center)}
         ${col('Right', right)}
-      </div>`;
-    resultsEl.classList.add('active');
-    mainEl.style.display = 'none';
+      </div>`);
   }
 
   async function doSearch(q) {
+    const seq = ++searchSeq;
     if (q.length < 2) {
       clearSearch();
       return;
@@ -490,14 +504,22 @@ document.addEventListener('click', async e => {
       const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
       if (!res.ok) throw new Error('Search failed');
       const { articles } = await res.json();
+      if (seq !== searchSeq) return;
       renderSearchResults(articles, q);
     } catch {
-      showToast('Search error — please try again.', 'error');
+      if (seq === searchSeq) showToast('Search error — please try again.', 'error');
     }
+  }
+
+  function resetSearch() {
+    clearTimeout(debounceTimer);
+    searchSeq += 1;
+    clearSearch();
   }
 
   input.addEventListener('input', () => {
     clearTimeout(debounceTimer);
+    searchSeq += 1;
     const q = input.value.trim();
     if (!q) {
       clearSearch();
@@ -506,11 +528,19 @@ document.addEventListener('click', async e => {
     debounceTimer = setTimeout(() => doSearch(q), 300);
   });
 
+  form?.addEventListener('submit', e => {
+    e.preventDefault();
+    clearTimeout(debounceTimer);
+    const q = input.value.trim();
+    if (q) doSearch(q);
+    else resetSearch();
+  });
+
   // Clear search on Escape
   input.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
       input.value = '';
-      clearSearch();
+      resetSearch();
     }
   });
 })();
