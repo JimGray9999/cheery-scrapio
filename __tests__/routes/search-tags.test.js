@@ -58,19 +58,13 @@ describe('Search and tag routes', () => {
       expect(Article.find.mock.calls[0][0]).toEqual({ $text: { $search: 'election' } });
     });
 
-    // R3: an unrecognized filter value (e.g. a typo like "lef") is currently treated
-    // the same as "all" / missing, silently returning unfiltered results instead of
-    // rejecting the request the way /api/articles does for the same kind of input.
-    test.failing(
-      'rejects an unrecognized filter value instead of silently returning unfiltered results',
-      async () => {
-        searchChain([]);
+    test('rejects an unrecognized filter value instead of silently returning unfiltered results', async () => {
+      searchChain([]);
 
-        const res = await request(app).get('/api/search?q=election&filter=lef');
-        expect(res.status).toBe(400);
-        expect(Article.find).not.toHaveBeenCalled();
-      }
-    );
+      const res = await request(app).get('/api/search?q=election&filter=lef');
+      expect(res.status).toBe(400);
+      expect(Article.find).not.toHaveBeenCalled();
+    });
 
     test('returns 500 on DB error', async () => {
       Article.find = jest.fn().mockImplementation(() => {
