@@ -1,10 +1,14 @@
 const Article = require('../models/Article');
 const logger = require('../utils/logger');
 
+async function listTags() {
+  const tags = await Article.distinct('tags');
+  return tags.filter(Boolean).sort();
+}
+
 async function getAllTags(req, res) {
   try {
-    const tags = await Article.distinct('tags');
-    res.json({ tags: tags.filter(Boolean).sort() });
+    res.json({ tags: await listTags() });
   } catch (error) {
     logger.error('Error fetching tags:', error);
     res.status(500).json({ error: 'Error fetching tags' });
@@ -32,7 +36,7 @@ async function updateArticleTags(req, res) {
 
     if (!article) return res.status(404).json({ error: 'Article not found' });
 
-    res.json({ tags: article.tags });
+    res.json({ tags: article.tags, allTags: await listTags() });
   } catch (error) {
     logger.error('Error updating tags:', error);
     res.status(500).json({ error: 'Error updating tags' });

@@ -246,18 +246,23 @@ function applyCardTags(id, tags) {
 
 let allTags = [];
 
-function recomputeAllTags() {
-  const tags = new Set();
-  [document, feedStash].filter(Boolean).forEach(root => {
-    root.querySelectorAll('.article-card[data-tags]').forEach(card => {
-      try {
-        JSON.parse(card.dataset.tags || '[]').forEach(t => tags.add(t));
-      } catch {
-        /* ignore malformed dataset */
-      }
+// serverTags is the authoritative list; without it, fall back to tags on rendered cards.
+function recomputeAllTags(serverTags) {
+  if (Array.isArray(serverTags)) {
+    allTags = [...serverTags].sort();
+  } else {
+    const tags = new Set();
+    [document, feedStash].filter(Boolean).forEach(root => {
+      root.querySelectorAll('.article-card[data-tags]').forEach(card => {
+        try {
+          JSON.parse(card.dataset.tags || '[]').forEach(t => tags.add(t));
+        } catch {
+          /* ignore malformed dataset */
+        }
+      });
     });
-  });
-  allTags = Array.from(tags).sort();
+    allTags = Array.from(tags).sort();
+  }
   const dl = document.getElementById('tag-datalist');
   if (dl) dl.innerHTML = allTags.map(t => `<option value="${escapeHtml(t)}">`).join('');
 }
@@ -420,13 +425,11 @@ document.addEventListener('click', async e => {
       body: JSON.stringify({ tags }),
     });
     if (!res.ok) throw new Error('Server error');
-    const { tags: saved } = await res.json();
+    const { tags: saved, allTags: serverTags } = await res.json();
 
     applyCardTags(id, saved);
 
-    // Recompute from rendered cards so tags no longer used anywhere drop out of
-    // suggestions, while tags still used on other cards remain.
-    recomputeAllTags();
+    recomputeAllTags(serverTags);
 
     const dialog = document.getElementById('tag-dialog-' + id);
     if (dialog) dialog.close();

@@ -98,6 +98,7 @@ describe('Search and tag routes', () => {
       Article.findByIdAndUpdate = jest.fn().mockReturnValue({
         lean: jest.fn().mockResolvedValue(result),
       });
+      Article.distinct = jest.fn().mockResolvedValue(['uk', '', 'politics']);
     };
 
     test('returns 400 when tags is not an array', async () => {
@@ -114,6 +115,7 @@ describe('Search and tag routes', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.tags).toEqual(['politics', 'uk']);
+      expect(res.body.allTags).toEqual(['politics', 'uk']);
       expect(Article.findByIdAndUpdate.mock.calls[0][1]).toEqual({
         $set: { tags: ['politics', 'uk'] },
       });
