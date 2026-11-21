@@ -32,9 +32,15 @@ const ArticleSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: 'Note',
     },
+    tags: {
+      type: [String],
+      default: [],
+    },
   },
   { timestamps: true }
 );
+
+ArticleSchema.index({ title: 'text' });
 
 const Article = mongoose.model('Article', ArticleSchema);
 

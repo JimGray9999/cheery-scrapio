@@ -22,6 +22,7 @@ const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const articleController = require('../controllers/articleController');
 const noteController = require('../controllers/noteController');
+const tagController = require('../controllers/tagController');
 
 const noteLimit = rateLimit({
   windowMs: 60 * 1000,
@@ -62,6 +63,13 @@ router.get('/right', articleController.getRightArticles);
 
 // Paginated JSON API — GET /api/articles?filter=left|center|right&before=<_id>
 router.get('/api/articles', articleController.getArticlesPage);
+
+// Full-text search — GET /api/search?q=<query>&filter=left|center|right
+router.get('/api/search', articleController.searchArticles);
+
+// Tags — GET /api/tags, PUT /articles/:id/tags
+router.get('/api/tags', tagController.getAllTags);
+router.put('/articles/:id/tags', noteLimit, tagController.updateArticleTags);
 
 // Article + note routes
 router.get('/articles/:id', articleController.getArticleById);

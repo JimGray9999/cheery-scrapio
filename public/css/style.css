@@ -228,11 +228,71 @@ ul {
   margin: 8px 0 6px;
 }
 
+.masthead-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .masthead-tagline {
   font-size: 0.6875rem;
   color: var(--fg-2);
   letter-spacing: 0.09em;
   text-transform: uppercase;
+  margin: 0;
+}
+
+.search-form {
+  flex: 0 1 280px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 0.8125rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.search-input:focus {
+  border-color: var(--accent);
+}
+
+/* Search results overlay */
+#search-results {
+  display: none;
+}
+
+#search-results.active {
+  display: block;
+  padding: 20px max(16px, env(safe-area-inset-left, 0px));
+}
+
+.search-results-header {
+  font-size: 0.75rem;
+  color: var(--fg-2);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.search-cols {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+@media (max-width: 700px) {
+  .search-cols {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ── Main layout ─────────────────────────────────────────── */
@@ -410,6 +470,117 @@ main {
   align-items: center;
   gap: 3px;
   flex-shrink: 0;
+}
+
+/* ── Tags ────────────────────────────────────────────────── */
+
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.tag-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  background: var(--accent-muted, color-mix(in srgb, var(--accent) 15%, transparent));
+  color: var(--accent);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+/* Tag editor dialog */
+.tag-dialog .tag-current {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 28px;
+  padding: 6px 0 2px;
+}
+
+.tag-dialog .tag-pill-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px 2px 8px;
+  border-radius: 10px;
+  background: var(--accent-muted, color-mix(in srgb, var(--accent) 15%, transparent));
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.tag-pill-edit .tag-remove {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.7;
+  font-size: 0.875rem;
+  line-height: 1;
+}
+
+.tag-pill-edit .tag-remove:hover {
+  opacity: 1;
+}
+
+.tag-input-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.tag-input {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 0.8125rem;
+  font-family: inherit;
+}
+
+.tag-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.tag-all-list {
+  margin-top: 12px;
+  font-size: 0.75rem;
+  color: var(--fg-2);
+}
+
+.tag-all-list span {
+  display: inline-block;
+  margin: 2px 3px 0 0;
+}
+
+.tag-suggestion {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-size: 0.6875rem;
+  background: none;
+  color: var(--fg-2);
+  transition:
+    border-color 0.15s,
+    color 0.15s;
+}
+
+.tag-suggestion:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .btn-comment {

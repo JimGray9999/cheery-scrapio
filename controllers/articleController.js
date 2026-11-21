@@ -2,6 +2,7 @@ const Article = require('../models/Article');
 const logger = require('../utils/logger');
 
 const PAGE_SIZE = 20;
+const VALID_SEARCH_FILTERS = new Set(['left', 'center', 'right', 'all']);
 
 function buildQuery(filter) {
   if (filter === 'left') return { left: true };
@@ -145,10 +146,41 @@ async function getArticlesPage(req, res) {
   }
 }
 
+/**
+ * @route GET /api/search?q=<query>&filter=left|center|right|all
+ */
+async function searchArticles(req, res) {
+  try {
+    const { q, filter } = req.query;
+    if (!q || q.trim().length < 2) {
+      return res.status(400).json({ error: 'q must be at least 2 characters' });
+    }
+    if (filter && !VALID_SEARCH_FILTERS.has(filter)) {
+      return res.status(400).json({ error: 'filter must be left, center, right, or all' });
+    }
+
+    const baseQuery = { $text: { $search: q.trim() } };
+    const filterQuery = buildQuery(filter);
+    const query = filterQuery ? { ...baseQuery, ...filterQuery } : baseQuery;
+
+    const articles = await Article.find(query, { score: { $meta: 'textScore' } })
+      .populate('note')
+      .sort({ score: { $meta: 'textScore' } })
+      .limit(50)
+      .lean();
+
+    res.json({ articles, total: articles.length });
+  } catch (error) {
+    logger.error('Error searching articles:', error);
+    res.status(500).json({ error: 'Error searching articles' });
+  }
+}
+
 module.exports = {
   getAllArticles,
   getLeftArticles,
   getRightArticles,
   getArticleById,
   getArticlesPage,
+  searchArticles,
 };
