@@ -59,20 +59,17 @@ describe('client tag suggestions — removing the last use of a tag', () => {
 
   // R2: article x is the sole article tagged "solo". Removing it from x and saving
   // should mean article y's tag dialog no longer offers "solo" as a suggestion.
-  test.failing(
-    "drops the tag from other articles' suggestions once its last use is removed",
-    async () => {
-      await flush(); // let loadAllTags() populate allTags = ['solo']
+  test("drops the tag from other articles' suggestions once its last use is removed", async () => {
+    await flush(); // let loadAllTags() populate allTags = ['solo']
 
-      document.querySelector('.btn-tag[data-id="x"]').click();
-      document.querySelector('#tag-current-x .tag-remove[data-tag="solo"]').click();
-      document.querySelector('.tag-save-btn[data-id="x"]').click();
-      await flush();
+    document.querySelector('.btn-tag[data-id="x"]').click();
+    document.querySelector('#tag-current-x .tag-remove[data-tag="solo"]').click();
+    document.querySelector('.tag-save-btn[data-id="x"]').click();
+    await flush();
 
-      document.querySelector('.btn-tag[data-id="y"]').click();
+    document.querySelector('.btn-tag[data-id="y"]').click();
 
-      const suggestionsY = document.getElementById('tag-suggestions-y');
-      expect(suggestionsY.querySelector('[data-tag="solo"]')).toBeNull();
-    }
-  );
+    const suggestionsY = document.getElementById('tag-suggestions-y');
+    expect(suggestionsY.querySelector('[data-tag="solo"]')).toBeNull();
+  });
 });

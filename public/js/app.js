@@ -246,6 +246,22 @@ function applyCardTags(id, tags) {
 
 let allTags = [];
 
+function recomputeAllTags() {
+  const tags = new Set();
+  [document, feedStash].filter(Boolean).forEach(root => {
+    root.querySelectorAll('.article-card[data-tags]').forEach(card => {
+      try {
+        JSON.parse(card.dataset.tags || '[]').forEach(t => tags.add(t));
+      } catch {
+        /* ignore malformed dataset */
+      }
+    });
+  });
+  allTags = Array.from(tags).sort();
+  const dl = document.getElementById('tag-datalist');
+  if (dl) dl.innerHTML = allTags.map(t => `<option value="${escapeHtml(t)}">`).join('');
+}
+
 async function loadAllTags() {
   try {
     const res = await fetch('/api/tags');
@@ -408,13 +424,9 @@ document.addEventListener('click', async e => {
 
     applyCardTags(id, saved);
 
-    // Update global tag list
-    saved.forEach(t => {
-      if (!allTags.includes(t)) allTags.push(t);
-    });
-    allTags.sort();
-    const dl = document.getElementById('tag-datalist');
-    if (dl) dl.innerHTML = allTags.map(t => `<option value="${escapeHtml(t)}">`).join('');
+    // Recompute from rendered cards so tags no longer used anywhere drop out of
+    // suggestions, while tags still used on other cards remain.
+    recomputeAllTags();
 
     const dialog = document.getElementById('tag-dialog-' + id);
     if (dialog) dialog.close();
