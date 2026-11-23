@@ -5,88 +5,10 @@
    ============================================================ */
 
 /* ── Tokens ─────────────────────────────────────────────── */
+/* Color, shadow, and font-family tokens now live in tokens.css (loaded first). */
 :root {
-  /* Backgrounds */
-  --bg: #f4f2ee;
-  --surface: #ffffff;
-  --surface-raised: #fefdfb;
-
-  /* Borders */
-  --border: #ddd9d2;
-  --border-subtle: #eceae5;
-
-  /* Text */
-  --fg: #1c1a17;
-  --fg-2: #6b6762;
-  --fg-3: #9c9890;
-
-  /* Perspective accents */
-  --left: #1d4ed8;
-  --left-bg: #eff6ff;
-
-  --center: #0f766e;
-  --center-bg: #f0fdfa;
-
-  --right: #b91c1c;
-  --right-bg: #fef2f2;
-
-  /* Semantic */
-  --success: #15803d;
-  --danger: #b91c1c;
-
   /* UI chrome */
   --radius: 6px;
-  --shadow-sm: 0 1px 3px rgba(28, 26, 23, 0.07), 0 1px 2px rgba(28, 26, 23, 0.04);
-  --shadow-md: 0 4px 16px rgba(28, 26, 23, 0.1);
-  --shadow-lg: 0 8px 32px rgba(28, 26, 23, 0.14);
-
-  /* Fonts */
-  --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
-  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    color-scheme: dark;
-    --bg: #131210;
-    --surface: #1d1c19;
-    --surface-raised: #242320;
-    --border: #2b2924;
-    --border-subtle: #222019;
-    --fg: #f0ede6;
-    --fg-2: #a09890;
-    --fg-3: #6b6660;
-    --left: #60a5fa;
-    --left-bg: #0e1e3a;
-    --center: #2dd4bf;
-    --center-bg: #091f1d;
-    --right: #f87171;
-    --right-bg: #2c1414;
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.25);
-    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);
-    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.45);
-  }
-}
-
-:root[data-theme='dark'] {
-  color-scheme: dark;
-  --bg: #131210;
-  --surface: #1d1c19;
-  --surface-raised: #242320;
-  --border: #2b2924;
-  --border-subtle: #222019;
-  --fg: #f0ede6;
-  --fg-2: #a09890;
-  --fg-3: #6b6660;
-  --left: #60a5fa;
-  --left-bg: #0e1e3a;
-  --center: #2dd4bf;
-  --center-bg: #091f1d;
-  --right: #f87171;
-  --right-bg: #2c1414;
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.25);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);
-  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.45);
 }
 
 /* ── Reset ───────────────────────────────────────────────── */
@@ -99,7 +21,7 @@
 body {
   background: var(--bg);
   color: var(--fg);
-  font-family: var(--font-body);
+  font-family: var(--font-ui);
   font-size: 15px;
   line-height: 1.6;
   margin: 0;
@@ -203,7 +125,7 @@ ul {
 .nav-scrape {
   font-size: 0.8125rem;
   font-weight: 600;
-  font-family: var(--font-body);
+  font-family: var(--font-ui);
   color: var(--surface);
   background: var(--fg);
   border: none;
@@ -587,7 +509,7 @@ main {
   margin-left: auto;
   font-size: 0.75rem;
   font-weight: 500;
-  font-family: var(--font-body);
+  font-family: var(--font-ui);
   color: var(--fg-2);
   background: transparent;
   border: 1px solid var(--border);
@@ -656,7 +578,7 @@ main {
   color: var(--fg-2);
   font-size: 0.875rem;
   font-weight: 500;
-  font-family: var(--font-body);
+  font-family: var(--font-ui);
   cursor: pointer;
   text-align: center;
   transition:
@@ -685,7 +607,7 @@ main {
   overflow-y: auto;
 }
 .comment-dialog::backdrop {
-  background: rgba(0, 0, 0, 0.45);
+  background: var(--scrim);
   backdrop-filter: blur(3px);
 }
 
@@ -715,7 +637,7 @@ main {
   padding: 4px 8px;
   border-radius: 4px;
   line-height: 1;
-  font-family: var(--font-body);
+  font-family: var(--font-ui);
   transition:
     color 0.15s,
     background 0.15s;
@@ -766,7 +688,7 @@ main {
 }
 .form-field input,
 .form-field textarea {
-  font-family: var(--font-body);
+  font-family: var(--font-ui);
   font-size: 0.875rem;
   color: var(--fg);
   background: var(--bg);
@@ -802,7 +724,7 @@ main {
 .btn-cancel {
   font-size: 0.875rem;
   font-weight: 500;
-  font-family: var(--font-body);
+  font-family: var(--font-ui);
   color: var(--fg-2);
   background: transparent;
   border: 1px solid var(--border);
@@ -821,7 +743,7 @@ main {
 .btn-save {
   font-size: 0.875rem;
   font-weight: 600;
-  font-family: var(--font-body);
+  font-family: var(--font-ui);
   color: var(--surface);
   background: var(--fg);
   border: 1px solid transparent;
@@ -847,7 +769,7 @@ main {
   color: var(--surface);
   font-size: 0.875rem;
   font-weight: 500;
-  font-family: var(--font-body);
+  font-family: var(--font-ui);
   padding: 10px 18px;
   border-radius: var(--radius);
   box-shadow: var(--shadow-lg);
@@ -865,7 +787,7 @@ main {
 }
 .toast.error {
   background: var(--danger);
-  color: #fff;
+  color: var(--danger-fg);
 }
 
 @media (prefers-reduced-motion: reduce) {
