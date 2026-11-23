@@ -9,7 +9,15 @@ const scrapingRoutes = require('./routes/scraping');
 function createApp() {
   const app = express();
 
-  app.engine('handlebars', engine({ defaultLayout: 'main' }));
+  app.engine(
+    'handlebars',
+    engine({
+      defaultLayout: 'main',
+      helpers: {
+        json: v => JSON.stringify(v ?? []),
+      },
+    })
+  );
   app.set('view engine', 'handlebars');
 
   app.use(

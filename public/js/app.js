@@ -32,10 +32,10 @@ document.addEventListener('click', e => {
   if (btn) openDialog(btn.dataset.id);
 });
 
-// Close via ✕ button or Cancel
+// Close via ✕ button or Cancel (note dialog only — tag dialog has its own handler)
 document.addEventListener('click', e => {
   const btn = e.target.closest('.dialog-close, .btn-cancel');
-  if (btn) closeDialog(btn.dataset.id);
+  if (btn && !btn.classList.contains('tag-dialog-close')) closeDialog(btn.dataset.id);
 });
 
 // Close when clicking the backdrop (outside the dialog box)
@@ -120,18 +120,27 @@ function safeHref(url) {
   return /^https?:\/\//i.test(url) ? url : '#';
 }
 
+function buildTagPills(tags) {
+  if (!tags || !tags.length) return '';
+  return `<div class="card-tags">${tags.map(t => `<span class="tag-pill">${escapeHtml(t)}</span>`).join('')}</div>`;
+}
+
 function buildCard(a) {
   const id = a._id;
+  const tags = Array.isArray(a.tags) ? a.tags : [];
+  const tagsJson = escapeHtml(JSON.stringify(tags));
   const time = a.time ? `<p class="card-meta">${escapeHtml(a.time)}</p>` : '';
   const badge = a.note ? '<span class="card-note-badge">&#10022; Note saved</span>' : '';
-  return `<div class="article-card" data-id="${id}">
+  return `<div class="article-card" data-id="${id}" data-tags="${tagsJson}">
   <p class="card-source">${escapeHtml(a.source)}</p>
   <h3 class="card-title">
     <a href="${escapeHtml(safeHref(a.link))}" target="_blank" rel="noopener noreferrer">${escapeHtml(a.title)}</a>
   </h3>
   ${time}
+  ${buildTagPills(tags)}
   <div class="card-footer">
     ${badge}
+    <button class="btn-tag" type="button" data-id="${id}">Tag</button>
     <button class="btn-comment" type="button" data-id="${id}">Add note</button>
   </div>
 </div>
@@ -159,6 +168,26 @@ function buildCard(a) {
       <button type="submit" class="btn-save">Save Note</button>
     </div>
   </form>
+</dialog>
+<dialog id="tag-dialog-${id}" class="comment-dialog tag-dialog" aria-labelledby="tag-dialog-title-${id}">
+  <div class="dialog-header">
+    <h4 id="tag-dialog-title-${id}">Tags</h4>
+    <button class="tag-dialog-close" type="button" data-id="${id}" aria-label="Close">&#x2715;</button>
+  </div>
+  <div class="dialog-article">
+    <span class="dialog-source">${escapeHtml(a.source)}</span>
+    <p class="dialog-title">${escapeHtml(a.title)}</p>
+  </div>
+  <div class="tag-current" id="tag-current-${id}"></div>
+  <div class="tag-input-row">
+    <input id="tag-input-${id}" class="tag-input" type="text" placeholder="Add a tag…" maxlength="50" list="tag-datalist" autocomplete="off" />
+    <button type="button" class="btn-save tag-add-btn" data-id="${id}">Add</button>
+  </div>
+  <div class="tag-all-list" id="tag-suggestions-${id}"></div>
+  <div class="dialog-actions" style="margin-top:14px">
+    <button type="button" class="btn-cancel tag-dialog-close" data-id="${id}">Cancel</button>
+    <button type="button" class="btn-save tag-save-btn" data-id="${id}">Save Tags</button>
+  </div>
 </dialog>`;
 }
 
@@ -196,6 +225,340 @@ document.addEventListener('click', async e => {
     showToast('Error loading articles.', 'error');
   }
 });
+
+// ── Tags ─────────────────────────────────────────────────
+
+// Feed content removed from the DOM while search results are shown, so card and
+// dialog IDs stay unique. Restored when the search is cleared.
+let feedStash = null;
+
+function applyCardTags(id, tags) {
+  [document, feedStash].filter(Boolean).forEach(root => {
+    root.querySelectorAll(`.article-card[data-id="${id}"]`).forEach(card => {
+      card.dataset.tags = JSON.stringify(tags);
+      card.querySelector('.card-tags')?.remove();
+      if (tags.length) {
+        card.querySelector('.card-footer').insertAdjacentHTML('beforebegin', buildTagPills(tags));
+      }
+    });
+  });
+}
+
+let allTags = [];
+
+// serverTags is the authoritative list; without it, fall back to tags on rendered cards.
+function recomputeAllTags(serverTags) {
+  if (Array.isArray(serverTags)) {
+    allTags = [...serverTags].sort();
+  } else {
+    const tags = new Set();
+    [document, feedStash].filter(Boolean).forEach(root => {
+      root.querySelectorAll('.article-card[data-tags]').forEach(card => {
+        try {
+          JSON.parse(card.dataset.tags || '[]').forEach(t => tags.add(t));
+        } catch {
+          /* ignore malformed dataset */
+        }
+      });
+    });
+    allTags = Array.from(tags).sort();
+  }
+  const dl = document.getElementById('tag-datalist');
+  if (dl) dl.innerHTML = allTags.map(t => `<option value="${escapeHtml(t)}">`).join('');
+}
+
+async function loadAllTags() {
+  try {
+    const res = await fetch('/api/tags');
+    if (!res.ok) return;
+    const { tags } = await res.json();
+    allTags = tags;
+    // populate shared datalist
+    const dl = document.getElementById('tag-datalist');
+    if (dl) {
+      dl.innerHTML = tags.map(t => `<option value="${escapeHtml(t)}">`).join('');
+    }
+  } catch {
+    /* non-fatal */
+  }
+}
+
+loadAllTags();
+
+function openTagDialog(id) {
+  const dialog = document.getElementById('tag-dialog-' + id);
+  if (!dialog) return;
+
+  const card = document.querySelector(`.article-card[data-id="${id}"]`);
+  let currentTags = [];
+  try {
+    currentTags = JSON.parse(card?.dataset.tags || '[]');
+  } catch {
+    currentTags = [];
+  }
+
+  renderTagCurrent(id, currentTags);
+  renderTagSuggestions(id, currentTags);
+
+  dialog.showModal();
+}
+
+function renderTagCurrent(id, tags) {
+  const el = document.getElementById('tag-current-' + id);
+  if (!el) return;
+  el.innerHTML = tags.length
+    ? tags
+        .map(
+          t =>
+            `<span class="tag-pill-edit">${escapeHtml(t)}<button class="tag-remove" data-tag="${escapeHtml(t)}" data-id="${id}" aria-label="Remove ${escapeHtml(t)}">&#x2715;</button></span>`
+        )
+        .join('')
+    : '<span style="font-size:0.75rem;color:var(--fg-2)">No tags yet</span>';
+}
+
+function renderTagSuggestions(id, currentTags) {
+  const el = document.getElementById('tag-suggestions-' + id);
+  if (!el) return;
+  const available = allTags.filter(t => !currentTags.includes(t));
+  if (!available.length) {
+    el.innerHTML = '';
+    return;
+  }
+  el.innerHTML =
+    '<span>Add existing: </span>' +
+    available
+      .map(
+        t =>
+          `<button class="tag-suggestion" data-tag="${escapeHtml(t)}" data-id="${id}">${escapeHtml(t)}</button>`
+      )
+      .join('');
+}
+
+function getDialogTags(id) {
+  const el = document.getElementById('tag-current-' + id);
+  if (!el) return [];
+  return Array.from(el.querySelectorAll('.tag-pill-edit'))
+    .map(pill => pill.querySelector('.tag-remove')?.dataset.tag || '')
+    .filter(Boolean);
+}
+
+// Open tag dialog
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.btn-tag');
+  if (btn) openTagDialog(btn.dataset.id);
+});
+
+// Close tag dialog
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.tag-dialog-close');
+  if (btn) {
+    const dialog = document.getElementById('tag-dialog-' + btn.dataset.id);
+    if (dialog) dialog.close();
+  }
+});
+
+// Remove tag pill
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.tag-remove');
+  if (!btn) return;
+  const id = btn.dataset.id;
+  const tags = getDialogTags(id).filter(t => t !== btn.dataset.tag);
+  renderTagCurrent(id, tags);
+  renderTagSuggestions(id, tags);
+});
+
+// Add tag from suggestion chips
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.tag-suggestion');
+  if (!btn) return;
+  const id = btn.dataset.id;
+  const tag = btn.dataset.tag;
+  const tags = getDialogTags(id);
+  if (!tags.includes(tag)) {
+    renderTagCurrent(id, [...tags, tag]);
+    renderTagSuggestions(id, [...tags, tag]);
+  }
+});
+
+// Add tag from input (Enter or Add button)
+function addTagFromInput(id) {
+  const input = document.getElementById('tag-input-' + id);
+  if (!input) return;
+  const tag = input.value.trim().toLowerCase();
+  if (!tag || tag.length > 50) return;
+  const tags = getDialogTags(id);
+  if (!tags.includes(tag)) {
+    renderTagCurrent(id, [...tags, tag]);
+    renderTagSuggestions(id, [...tags, tag]);
+  }
+  input.value = '';
+}
+
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.tag-add-btn');
+  if (btn) addTagFromInput(btn.dataset.id);
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  const input = e.target.closest('.tag-input');
+  if (!input) return;
+  e.preventDefault();
+  const id = input.id.replace('tag-input-', '');
+  addTagFromInput(id);
+});
+
+// Save tags
+document.addEventListener('click', async e => {
+  const btn = e.target.closest('.tag-save-btn');
+  if (!btn) return;
+  const id = btn.dataset.id;
+  const tags = getDialogTags(id);
+
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+
+  try {
+    const res = await fetch('/articles/' + id + '/tags', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tags }),
+    });
+    if (!res.ok) throw new Error('Server error');
+    const { tags: saved, allTags: serverTags } = await res.json();
+
+    applyCardTags(id, saved);
+
+    recomputeAllTags(serverTags);
+
+    const dialog = document.getElementById('tag-dialog-' + id);
+    if (dialog) dialog.close();
+    showToast('Tags saved!');
+  } catch {
+    showToast('Error saving tags.', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save Tags';
+  }
+});
+
+// ── Search ───────────────────────────────────────────────
+
+(function initSearch() {
+  const input = document.getElementById('search-input');
+  const resultsEl = document.getElementById('search-results');
+  const mainEl = document.getElementById('main-content');
+  const form = input?.closest('form');
+  if (!input || !resultsEl || !mainEl) return;
+
+  let debounceTimer;
+  let searchSeq = 0;
+
+  function clearSearch() {
+    resultsEl.innerHTML = '';
+    resultsEl.classList.remove('active');
+    if (feedStash) {
+      mainEl.append(feedStash);
+      feedStash = null;
+    }
+  }
+
+  function showResults(html) {
+    if (!feedStash) {
+      feedStash = document.createDocumentFragment();
+      feedStash.append(...mainEl.childNodes);
+    }
+    resultsEl.innerHTML = html;
+    resultsEl.classList.add('active');
+  }
+
+  function groupByBias(articles) {
+    const left = [],
+      center = [],
+      right = [];
+    articles.forEach(a => {
+      if (a.left) left.push(a);
+      else if (a.right) right.push(a);
+      else center.push(a);
+    });
+    return { left, center, right };
+  }
+
+  function renderSearchResults(articles, query) {
+    if (!articles.length) {
+      showResults(
+        `<p class="search-results-header">No results for &ldquo;${escapeHtml(query)}&rdquo;</p>`
+      );
+      return;
+    }
+
+    const { left, center, right } = groupByBias(articles);
+
+    const col = (label, items) => {
+      if (!items.length)
+        return `<div class="news-col"><h2 class="col-heading">${label}</h2><p class="empty-state">No results</p></div>`;
+      return `<div class="news-col"><h2 class="col-heading">${label}</h2><div class="col-articles">${items.map(buildCard).join('\n')}</div></div>`;
+    };
+
+    showResults(`
+      <p class="search-results-header">${articles.length} result${articles.length !== 1 ? 's' : ''} for &ldquo;${escapeHtml(query)}&rdquo;</p>
+      <div class="search-cols news-grid">
+        ${col('Left', left)}
+        ${col('Center', center)}
+        ${col('Right', right)}
+      </div>`);
+  }
+
+  async function doSearch(q) {
+    const seq = ++searchSeq;
+    if (q.length < 2) {
+      clearSearch();
+      return;
+    }
+    try {
+      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+      if (!res.ok) throw new Error('Search failed');
+      const { articles } = await res.json();
+      if (seq !== searchSeq) return;
+      renderSearchResults(articles, q);
+    } catch {
+      if (seq === searchSeq) showToast('Search error — please try again.', 'error');
+    }
+  }
+
+  function resetSearch() {
+    clearTimeout(debounceTimer);
+    searchSeq += 1;
+    clearSearch();
+  }
+
+  input.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    searchSeq += 1;
+    const q = input.value.trim();
+    if (!q) {
+      clearSearch();
+      return;
+    }
+    debounceTimer = setTimeout(() => doSearch(q), 300);
+  });
+
+  form?.addEventListener('submit', e => {
+    e.preventDefault();
+    clearTimeout(debounceTimer);
+    const q = input.value.trim();
+    if (q) doSearch(q);
+    else resetSearch();
+  });
+
+  // Clear search on Escape
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      input.value = '';
+      resetSearch();
+    }
+  });
+})();
 
 // ── Active nav link ──────────────────────────────────────
 

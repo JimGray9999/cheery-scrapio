@@ -1,14 +1,41 @@
-<div class="article-card" data-id="{{_id}}">
+<div class="article-card" data-id="{{_id}}" data-tags="{{json tags}}">
   <p class="card-source">{{source}}</p>
   <h3 class="card-title">
     <a href="{{link}}" target="_blank" rel="noopener noreferrer">{{title}}</a>
   </h3>
   {{#if time}}<p class="card-meta">{{time}}</p>{{/if}}
+  {{#if tags.length}}
+  <div class="card-tags">
+    {{#each tags}}<span class="tag-pill">{{this}}</span>{{/each}}
+  </div>
+  {{/if}}
   <div class="card-footer">
     {{#if note}}<span class="card-note-badge">&#10022; Note saved</span>{{/if}}
+    <button class="btn-tag" type="button" data-id="{{_id}}">Tag</button>
     <button class="btn-comment" type="button" data-id="{{_id}}">Add note</button>
   </div>
 </div>
+
+<dialog id="tag-dialog-{{_id}}" class="comment-dialog tag-dialog" aria-labelledby="tag-dialog-title-{{_id}}">
+  <div class="dialog-header">
+    <h4 id="tag-dialog-title-{{_id}}">Tags</h4>
+    <button class="tag-dialog-close" type="button" data-id="{{_id}}" aria-label="Close">&#x2715;</button>
+  </div>
+  <div class="dialog-article">
+    <span class="dialog-source">{{source}}</span>
+    <p class="dialog-title">{{title}}</p>
+  </div>
+  <div class="tag-current" id="tag-current-{{_id}}"></div>
+  <div class="tag-input-row">
+    <input id="tag-input-{{_id}}" class="tag-input" type="text" placeholder="Add a tag&hellip;" maxlength="50" list="tag-datalist" autocomplete="off" />
+    <button type="button" class="btn-save tag-add-btn" data-id="{{_id}}">Add</button>
+  </div>
+  <div class="tag-all-list" id="tag-suggestions-{{_id}}"></div>
+  <div class="dialog-actions" style="margin-top:14px">
+    <button type="button" class="btn-cancel tag-dialog-close" data-id="{{_id}}">Cancel</button>
+    <button type="button" class="btn-save tag-save-btn" data-id="{{_id}}">Save Tags</button>
+  </div>
+</dialog>
 
 <dialog id="dialog-{{_id}}" class="comment-dialog" aria-labelledby="dialog-title-{{_id}}">
   <div class="dialog-header">
