@@ -3,7 +3,15 @@ const prettierConfig = require('eslint-config-prettier');
 
 module.exports = [
   {
-    ignores: ['node_modules/**', 'coverage/**', 'logs/**', '*.log', '.env'],
+    ignores: [
+      'node_modules/**',
+      'coverage/**',
+      'playwright-report/**',
+      'test-results/**',
+      'logs/**',
+      '*.log',
+      '.env',
+    ],
   },
   {
     files: ['**/*.js'],
