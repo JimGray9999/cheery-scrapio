@@ -5,6 +5,7 @@ const logger = require('./utils/logger');
 
 const articleRoutes = require('./routes/articles');
 const scrapingRoutes = require('./routes/scraping');
+const { isScrapeProtected } = require('./middleware/requireScrapeToken');
 
 function createApp() {
   const app = express();
@@ -37,6 +38,11 @@ function createApp() {
       },
     })
   );
+  // Hide the in-app scrape buttons (plain form POSTs, cannot send a header) when gated.
+  app.use((req, res, next) => {
+    res.locals.scrapeProtected = isScrapeProtected();
+    next();
+  });
   app.use(express.static('public'));
   app.use(express.urlencoded({ extended: false }));
   app.use(express.json());

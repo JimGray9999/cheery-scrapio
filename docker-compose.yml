@@ -39,6 +39,7 @@ services:
       PORT: 5000
       MONGODB_URI: mongodb://${MONGO_USERNAME:-admin}:${MONGO_PASSWORD}@mongodb:27017/cheery-scrapio?authSource=admin
       GUARDIAN_API_KEY: ${GUARDIAN_API_KEY:-test}
+      SCRAPE_SECRET: ${SCRAPE_SECRET:-}
       SCRAPE_URL_LEFT: https://www.democraticunderground.com/?com=forum&id=1014
       SCRAPE_URL_RIGHT: http://www.freerepublic.com/tag/breaking-news/index?tab=articles
       SCRAPE_URL_CENTER: http://www.bbc.com/news/world/us_and_canada

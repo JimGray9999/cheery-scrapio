@@ -2,6 +2,7 @@ const express = require('express');
 const rateLimit = require('express-rate-limit');
 const router = express.Router();
 const scraperController = require('../controllers/scraperController');
+const { requireScrapeToken } = require('../middleware/requireScrapeToken');
 
 const scrapeLimit = rateLimit({
   windowMs: 60 * 1000,
@@ -12,6 +13,7 @@ const scrapeLimit = rateLimit({
   skip: () => process.env.NODE_ENV === 'test',
 });
 
-router.post('/scrape', scrapeLimit, scraperController.scrapeAll);
+// Token check runs first so unauthenticated callers cannot burn the rate limit budget.
+router.post('/scrape', requireScrapeToken, scrapeLimit, scraperController.scrapeAll);
 
 module.exports = router;

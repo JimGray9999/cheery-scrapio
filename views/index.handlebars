@@ -18,9 +18,11 @@
 
       <div class="empty-state">
         <p>No left articles yet.</p>
+        {{#unless scrapeProtected}}
         <form action="/scrape" method="post" class="inline-form">
           <button type="submit" class="btn-link">Scrape now &rarr;</button>
         </form>
+        {{/unless}}
       </div>
 
     </div>
@@ -44,9 +46,11 @@
 
       <div class="empty-state">
         <p>No center articles yet.</p>
+        {{#unless scrapeProtected}}
         <form action="/scrape" method="post" class="inline-form">
           <button type="submit" class="btn-link">Scrape now &rarr;</button>
         </form>
+        {{/unless}}
       </div>
 
     </div>
@@ -70,9 +74,11 @@
 
       <div class="empty-state">
         <p>No right articles yet.</p>
+        {{#unless scrapeProtected}}
         <form action="/scrape" method="post" class="inline-form">
           <button type="submit" class="btn-link">Scrape now &rarr;</button>
         </form>
+        {{/unless}}
       </div>
 
     </div>

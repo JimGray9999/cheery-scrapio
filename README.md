@@ -1,12 +1,14 @@
 # Cheery Scrapio 📰
 
-A news article aggregator that scrapes articles from different political perspectives, allowing users to view news from left, right, and center sources in one place.
+A news article aggregator (the UI is branded **Balance**) that collects articles from left, center and right sources and shows them side by side in one place.
 
 ## Features
 
-- 🔍 **Multi-Source Scraping**: Aggregates articles from Democratic Underground (left), Free Republic (right), and BBC News (center)
-- 💬 **Article Comments**: Add and manage personal notes/comments on articles
-- 🔐 **Security-First**: Environment-based configuration, Helmet security headers, input validation
+- 🔍 **Multi-Source Collection**: The Guardian API (left), BBC News (center) and Free Republic (right)
+- 💬 **Article Notes**: Add and delete a personal note on an article
+- 🏷️ **Tags and Search**: Tag articles and search titles with MongoDB full-text search
+- 📄 **Cursor Pagination**: 20 articles per column with a Load more button
+- 🔐 **Security-First**: Environment-based configuration, Helmet CSP, input validation, rate limiting, optional scrape token
 - 📊 **Filter by Perspective**: View articles filtered by political lean
 - 🎯 **Duplicate Detection**: Smart deduplication prevents article repetition
 - ✅ **Comprehensive Testing**: Full test coverage with Jest
@@ -14,14 +16,14 @@ A news article aggregator that scrapes articles from different political perspec
 
 ## Tech Stack
 
-- **Backend**: Node.js 18+, Express 5
+- **Backend**: Node.js 20+, Express 5
 - **Database**: MongoDB with Mongoose ODM
 - **View Engine**: Handlebars
-- **Scraping**: Cheerio, Axios
+- **Data sources**: Guardian API (Axios), Cheerio and Axios scraping for BBC and Free Republic
 - **Testing**: Jest, Supertest
 - **Code Quality**: ESLint, Prettier, Husky pre-commit hooks
 - **Logging**: Winston structured logging
-- **Security**: Helmet, express-validator
+- **Security**: Helmet, express-validator, express-rate-limit
 
 ## Architecture
 
@@ -31,6 +33,7 @@ cheery-scrapio/
 ├── controllers/         # HTTP request handlers
 ├── models/             # Mongoose schemas
 ├── routes/             # Express route definitions
+├── middleware/         # Express middleware (scrape token gate)
 ├── services/           # Business logic (scraping)
 ├── utils/              # Utilities (logger)
 ├── views/              # Handlebars templates
@@ -50,7 +53,7 @@ The application follows an **MVC + Services** architecture:
 
 ### Prerequisites
 
-- Node.js 18 or higher
+- Node.js 20 or higher
 - MongoDB 4.0 or higher (or use Docker Compose)
 - Git
 
@@ -71,15 +74,24 @@ The application follows an **MVC + Services** architecture:
 
 3. **Configure environment variables**
 
-   Create a `.env` file in the root directory:
+   Copy `.env.example` to `.env`, or create it in the root directory:
 
    ```env
    NODE_ENV=development
    PORT=5000
    MONGODB_URI=mongodb://localhost:27017/cheery-scrapio
 
-   # Optional: Custom scraping URLs
-   SCRAPE_URL_LEFT=https://www.democraticunderground.com/?com=forum&id=1014
+   # Docker Compose only: MongoDB root credentials (MONGO_PASSWORD is required)
+   MONGO_USERNAME=admin
+   MONGO_PASSWORD=changeme
+
+   # Left lane source: free key from https://open-platform.theguardian.com
+   GUARDIAN_API_KEY=your-key
+
+   # Optional: require this value in the x-scrape-token header on POST /scrape
+   # SCRAPE_SECRET=
+
+   # Optional: custom scraping URLs
    SCRAPE_URL_RIGHT=http://www.freerepublic.com/tag/breaking-news/index?tab=articles
    SCRAPE_URL_CENTER=http://www.bbc.com/news/world/us_and_canada
    ```
@@ -92,7 +104,9 @@ The application follows an **MVC + Services** architecture:
    docker-compose up -d mongodb
    ```
 
-   Or use local MongoDB installation
+   The Compose MongoDB requires authentication, so set `MONGODB_URI` to
+   `mongodb://admin:<MONGO_PASSWORD>@localhost:27017/cheery-scrapio?authSource=admin`.
+   With a local MongoDB installation without auth, the plain URI above works.
 
 5. **Run the application**
 
@@ -178,14 +192,24 @@ Pre-commit hooks automatically run linting and formatting on staged files.
 - `GET /all` - View all articles
 - `GET /left` - View left-leaning articles
 - `GET /right` - View right-leaning articles
-- `POST /articles/:id` - Add note/comment to article
-- `DELETE /articles/:id/note` - Delete note from article
+- `GET /articles/:id` - View one article
+- `GET /api/articles?filter=left|center|right&before=<_id>` - Cursor-paginated JSON (20 per page)
+- `GET /api/search?q=<query>&filter=left|center|right` - Full-text title search
+- `GET /api/tags` - All tags in use
+- `PUT /articles/:id/tags` - Replace an article's tags (max 20 tags, 50 characters each)
+- `POST /articles/:id` - Add a note to an article (title 3-100 chars, text 10-1000 chars)
+- `DELETE /articles/:id/note` - Delete the note from an article
 
 ### Scraping
 
-- `GET /scrape/left` - Trigger left article scrape
-- `GET /scrape/right` - Trigger right article scrape
-- `GET /scrape/news/center` - Trigger center (BBC) article scrape
+- `POST /scrape` - Run all three sources (left, right, center), then redirect to `/all`.
+  Rate limited to 1 request per minute in production (10 otherwise). If `SCRAPE_SECRET` is set,
+  send it as the `x-scrape-token` header or the request gets a 401, and the in-app Refresh News
+  buttons are hidden:
+
+  ```bash
+  curl -X POST -H "x-scrape-token: $SCRAPE_SECRET" http://localhost:5000/scrape
+  ```
 
 ### Health
 
@@ -195,14 +219,19 @@ Pre-commit hooks automatically run linting and formatting on staged files.
 
 All configuration is managed through environment variables in `.env`:
 
-| Variable            | Default                                    | Description               |
-| ------------------- | ------------------------------------------ | ------------------------- |
-| `NODE_ENV`          | `development`                              | Environment mode          |
-| `PORT`              | `5000`                                     | Server port               |
-| `MONGODB_URI`       | `mongodb://localhost:27017/cheery-scrapio` | MongoDB connection string |
-| `SCRAPE_URL_LEFT`   | Democratic Underground URL                 | Left-leaning news source  |
-| `SCRAPE_URL_RIGHT`  | Free Republic URL                          | Right-leaning news source |
-| `SCRAPE_URL_CENTER` | BBC News URL                               | Center news source        |
+| Variable            | Default                              | Description                                                     |
+| ------------------- | ------------------------------------ | --------------------------------------------------------------- |
+| `NODE_ENV`          | `development`                        | Environment mode                                                |
+| `PORT`              | `5000`                               | Server port                                                     |
+| `MONGODB_URI`       | `mongodb://localhost/cheery-scrapio` | MongoDB connection string (Compose builds an authenticated one) |
+| `MONGO_USERNAME`    | `admin`                              | Docker Compose MongoDB root user                                |
+| `MONGO_PASSWORD`    | none (required by Compose)           | Docker Compose MongoDB root password                            |
+| `GUARDIAN_API_KEY`  | `test`                               | Guardian API key for the left lane                              |
+| `SCRAPE_SECRET`     | unset                                | When set, `POST /scrape` requires a matching `x-scrape-token`   |
+| `SCRAPE_URL_RIGHT`  | Free Republic URL                    | Right-leaning news source                                       |
+| `SCRAPE_URL_CENTER` | BBC News URL                         | Center news source                                              |
+| `LOG_LEVEL`         | `info`                               | Winston log level                                               |
+| `LOG_FILE`          | `logs/app.log`                       | Application log file                                            |
 
 ## Testing
 
@@ -212,7 +241,7 @@ The project includes comprehensive unit and integration tests:
 - **Service Tests**: Scraping and data processing
 - **Integration Tests**: End-to-end API testing
 
-Test coverage targets: 70% across branches, functions, lines, and statements.
+Coverage thresholds (enforced in `jest.config.js`): 78% lines and statements, 70% functions, 60% branches.
 
 ## Security
 
@@ -235,7 +264,7 @@ Test coverage targets: 70% across branches, functions, lines, and statements.
 
 - Follow ESLint and Prettier configurations
 - Write tests for new features
-- Maintain test coverage above 70%
+- Keep coverage above the thresholds in `jest.config.js` (`npm run test:coverage` enforces them)
 - Use meaningful commit messages
 
 ## Troubleshooting
@@ -285,6 +314,6 @@ ISC
 
 Built with data from:
 
-- [Democratic Underground](https://www.democraticunderground.com)
+- [The Guardian Open Platform](https://open-platform.theguardian.com)
 - [Free Republic](https://www.freerepublic.com)
 - [BBC News](https://www.bbc.com/news)
