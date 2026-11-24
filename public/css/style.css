@@ -799,6 +799,15 @@ main {
   gap: 10px;
 }
 
+.tag-dialog .dialog-actions {
+  margin-top: 14px;
+}
+
+.tag-empty {
+  font-size: 0.75rem;
+  color: var(--fg-2);
+}
+
 .btn-cancel {
   font-size: 0.875rem;
   font-weight: 500;

@@ -184,7 +184,7 @@ function buildCard(a) {
     <button type="button" class="btn-save tag-add-btn" data-id="${id}">Add</button>
   </div>
   <div class="tag-all-list" id="tag-suggestions-${id}"></div>
-  <div class="dialog-actions" style="margin-top:14px">
+  <div class="dialog-actions">
     <button type="button" class="btn-cancel tag-dialog-close" data-id="${id}">Cancel</button>
     <button type="button" class="btn-save tag-save-btn" data-id="${id}">Save Tags</button>
   </div>
@@ -313,7 +313,7 @@ function renderTagCurrent(id, tags) {
             `<span class="tag-pill-edit">${escapeHtml(t)}<button class="tag-remove" data-tag="${escapeHtml(t)}" data-id="${id}" aria-label="Remove ${escapeHtml(t)}">&#x2715;</button></span>`
         )
         .join('')
-    : '<span style="font-size:0.75rem;color:var(--fg-2)">No tags yet</span>';
+    : '<span class="tag-empty">No tags yet</span>';
 }
 
 function renderTagSuggestions(id, currentTags) {
