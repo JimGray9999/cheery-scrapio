@@ -22,7 +22,7 @@ Track ongoing improvements to the codebase. Check off items as they land on `mai
 - [x] Routes/config/logger in `collectCoverageFrom` but have zero tests — excluded from coverage; thresholds raised to reflect only controllers/services
 - [x] `/debug/counts` — endpoint not present in codebase (N/A)
 - [x] No rate limiting — added `express-rate-limit` to `POST /scrape` (1/min) and `POST /articles/:id` (10/min); skipped in `NODE_ENV=test`
-- [x] Scrape endpoints are unauthenticated GETs — consolidated into `POST /scrape`; optional `SCRAPE_SECRET` env var gates it via `x-scrape-token` header
+- [x] Scrape endpoints are unauthenticated GETs — consolidated into `POST /scrape`; optional `SCRAPE_SECRET` env var gates it via `x-scrape-token` header (`middleware/requireScrapeToken.js`; 401 on a missing or wrong token, open when unset; the in-app Refresh News buttons are hidden while the gate is on because a form post cannot send the header)
 - [x] No integration/route-level tests — added supertest suites in `__tests__/routes/` covering `/health`, `/articles/:id`, `POST /articles/:id`, `POST /scrape` (31 tests total, all coverage thresholds pass)
 
 ---
